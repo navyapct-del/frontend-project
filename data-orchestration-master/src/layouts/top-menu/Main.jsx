@@ -63,10 +63,7 @@ function Main() {
           />
             
           
-          <div style={{ width: "1px", height: "28px", background: "rgba(255,255,255,0.2)" }} />
-          <span style={{ fontSize: "13px", fontWeight: "600", color: "rgba(255,255,255,0.7)", whiteSpace: "nowrap" }}>
-            Data Orchestration
-          </span>
+          
         </Link>
 
         {/* Nav */}
