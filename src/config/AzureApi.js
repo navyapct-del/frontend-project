@@ -124,12 +124,27 @@ export const deleteDocument = async (documentId) => {
  * @param {string} question       - Natural language question
  * @param {string} filenameFilter - Optional filename to scope the search
  */
+// Keywords that signal the user wants a chart
+const CHART_INTENT_KEYWORDS = [
+  "plot", "chart", "graph", "visualize", "visualise",
+  "bar chart", "pie chart", "line chart", "show me a graph",
+  "how many", "count", "distribution", "breakdown",
+];
+
+const detectChartIntent = (question) =>
+  CHART_INTENT_KEYWORDS.some((kw) => question.toLowerCase().includes(kw));
+
 export const queryDocuments = async (question, filenameFilter = "", history = []) => {
   console.log("[AzureApi] POST /query →", question);
   const res = await fetch(`${AZURE_BASE_URL}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ q: question, filename: filenameFilter, history }),
+    body: JSON.stringify({
+      q: question,
+      filename: filenameFilter,
+      history,
+      intent: detectChartIntent(question) ? "chart" : "auto",
+    }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
