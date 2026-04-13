@@ -5,6 +5,8 @@ import { AccountContext } from "../../../config/Account";
 import { LoadingIcon } from "@/base-components";
 import { uploadDocument } from "../../../config/AzureApi";
 import { documentextention } from "../FileExtensions";
+import { validateFileType } from "../../../utils/fileValidation";
+import { ProgressBar } from "../ProgressBar";
 import {
   Lucide,
   Modal,
@@ -30,6 +32,9 @@ function DocumentUpload(props) {
     useState(false);
   const [addbtnexception, setAddBtnException] = useState(false);
   const [notsupportedfiles, setNotSupportedFiles] = useState([]);
+  const [fileTypeError, setFileTypeError] = useState("");
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadSuccess, setUploadSuccessState] = useState(false);
 
   const { userEmail } = useContext(AccountContext);
   console.log("upload.jsx userEmail ", userEmail);
@@ -61,6 +66,8 @@ function DocumentUpload(props) {
     setFormatNotSupportedDisable(false);
     setLoading(true);
     setStaticBackdropModalPreview(true);
+    setUploadProgress(0);
+    setUploadSuccessState(false);
 
     const results = [];
     const errors  = [];
@@ -69,13 +76,22 @@ function DocumentUpload(props) {
       const file = field.selectedFile?.[0];
       if (!file) continue;
 
+      // Validate file type before uploading
+      if (!validateFileType(file)) {
+        setFileTypeError("Unsupported file type. Please upload a JPG, PNG, PDF, or CSV file.");
+        errors.push({ file: file.name, error: "Unsupported file type" });
+        continue;
+      }
+
       const description = field.description || "";
       const tags        = (field.tags || []).join(", ");
 
       console.log("[DocumentUpload] Uploading:", file.name, "| desc:", description, "| tags:", tags);
 
       try {
-        const response = await uploadDocument(file, description, tags);
+        const response = await uploadDocument(file, description, tags, (pct) => {
+          setUploadProgress(pct);
+        });
         console.log("[DocumentUpload] Upload success:", response);
         results.push(response);
       } catch (err) {
@@ -92,8 +108,14 @@ function DocumentUpload(props) {
 
     if (results.length > 0) {
       console.log("[DocumentUpload] All uploads complete. IDs:", results.map(r => r.id));
-      setInputfields([]);
-      setImages([]);
+      setUploadSuccessState(true);
+      // Show success indicator for 2s then close
+      setTimeout(() => {
+        setUploadSuccessState(false);
+        setInputfields([]);
+        setImages([]);
+        setUploadProgress(0);
+      }, 2000);
     }
   };
 
@@ -581,6 +603,28 @@ function DocumentUpload(props) {
                   <span>
                     {state.uploadSuccess ? setSuccessModalPreview(true) : ""}
                   </span>
+                  {fileTypeError && (
+                    <div className="text-red-600 text-center text-sm my-2 font-medium">
+                      {fileTypeError}
+                    </div>
+                  )}
+                  {loading && uploadProgress > 0 && uploadProgress < 100 && (
+                    <div className="my-3">
+                      <ProgressBar
+                        percent={uploadProgress}
+                        filename={inputFields[0]?.selectedFile?.[0]?.name || ""}
+                        fileSize={inputFields[0]?.selectedFile?.[0]?.size || 0}
+                      />
+                    </div>
+                  )}
+                  {uploadSuccess && (
+                    <div className="text-green-600 text-center text-sm my-2 font-medium flex items-center justify-center gap-2">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                      </svg>
+                      Upload successful!
+                    </div>
+                  )}
                   <Modal
                     size="modal-md"
                     backdrop="static"

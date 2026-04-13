@@ -29,7 +29,15 @@ export const listDocuments = async () => {
   if (!res.ok) throw new Error(`listDocuments failed: ${res.status}`);
   const data = await res.json();
   console.log("[AzureApi] /documents response:", data);
-  return data;
+  // Normalize: tags array → comma string, summary → description
+  const normalized = Array.isArray(data)
+    ? data.map(d => ({
+        ...d,
+        tags:        Array.isArray(d.tags) ? d.tags.join(", ") : (d.tags || ""),
+        description: d.summary || d.description || "",
+      }))
+    : data;
+  return normalized;
 };
 
 // ─────────────────────────────────────────────
@@ -42,15 +50,19 @@ export const listDocuments = async () => {
  * @param {string} description - Optional description
  * @param {string} tags        - Comma-separated tags string
  * @param {function} onProgress - Optional callback(percent: number)
+ * @param {object} extraFields  - Optional extra FormData fields (e.g. { temp, session_id })
  * @returns {{ id, filename, blob_url, message }}
  */
-export const uploadDocument = async (file, description = "", tags = "", onProgress = null) => {
+export const uploadDocument = async (file, description = "", tags = "", onProgress = null, extraFields = {}) => {
   console.log("[AzureApi] POST /upload →", file.name);
   const formData = new FormData();
   formData.append("file", file);
   formData.append("filename", file.name);
   formData.append("description", description);
   formData.append("tags", tags);
+
+  // Append any extra fields (e.g. temp, session_id)
+  Object.entries(extraFields).forEach(([k, v]) => formData.append(k, v));
 
   // Use XMLHttpRequest if progress tracking is needed
   if (onProgress) {
@@ -66,7 +78,12 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
         if (xhr.status === 201) {
           resolve(JSON.parse(xhr.responseText));
         } else {
-          reject(new Error(`Upload failed: ${xhr.status} — ${xhr.responseText}`));
+          let errMsg = `Upload failed: ${xhr.status}`;
+          try {
+            const parsed = JSON.parse(xhr.responseText);
+            if (parsed.error) errMsg = parsed.error;
+          } catch {}
+          reject(new Error(errMsg));
         }
       };
 
