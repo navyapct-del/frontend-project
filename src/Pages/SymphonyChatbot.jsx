@@ -87,6 +87,49 @@ const ChartRenderer = ({ data }) => {
   return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || "No chart data available."}</span>;
 };
 
+// ── Smart text-to-chart parser ───────────────────────────────────────────────
+// If backend returns type:"text" but user asked for a chart,
+// try to extract numbers from the answer and build chart data client-side.
+const parseChartFromText = (answer, question) => {
+  if (!answer || typeof answer !== "string") return null;
+
+  const lines = answer.split(/\n/).map(s => s.trim()).filter(Boolean);
+  const labels = [];
+  const values = [];
+
+  // Pattern: "Label: 42" or "Label - 42" or "Label (42)" or "42 Label"
+  const patterns = [
+    /^(.+?)[\s]*[:\-–]\s*(\d+(?:\.\d+)?)\s*$/,
+    /^(.+?)\s*\((\d+(?:\.\d+)?)\)\s*$/,
+    /^(\d+(?:\.\d+)?)\s+(.+)$/,
+  ];
+
+  lines.forEach(line => {
+    for (const pat of patterns) {
+      const m = line.match(pat);
+      if (m) {
+        const isNumFirst = pat === patterns[2];
+        const label = isNumFirst ? m[2].trim() : m[1].trim();
+        const value = parseFloat(isNumFirst ? m[1] : m[2]);
+        if (!isNaN(value) && label.length < 80) {
+          labels.push(label);
+          values.push(value);
+        }
+        break;
+      }
+    }
+  });
+
+  if (labels.length >= 2) {
+    const q = question.toLowerCase();
+    const chartType = q.includes("pie") ? "pie" : q.includes("line") ? "line" : "bar";
+    return { type: "chart", chart_type: chartType, labels, values, answer };
+  }
+  return null;
+};
+
+const CHART_INTENT_RE = /\b(plot|chart|graph|visuali[sz]e|bar chart|pie chart|line chart|show.*graph|how many|count|distribution|breakdown|compare|versus|vs\.?)\b/i;
+
 // ── Table renderer ───────────────────────────────────────────────────────────
 const ResultTable = ({ columns, rows }) => (
   <div style={{ overflowX: "auto", fontSize: "13px", marginTop: "8px" }}>
@@ -115,7 +158,6 @@ const ResultTable = ({ columns, rows }) => (
 
 // ── Bot message renderer — called at render time, not store time ─────────────
 const BotMessage = ({ msg }) => {
-  // Plain string messages (welcome, errors from catch)
   if (typeof msg.text === "string" && !msg.rawData) {
     return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
   }
@@ -155,8 +197,14 @@ const BotMessage = ({ msg }) => {
     );
   }
 
-  // text / scalar / fallback
-  return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || "No relevant data found."}</span>;
+  // text fallback — try to parse chart from answer if user asked for one
+  const answer = data.answer || msg.text || "";
+  if (msg.originalQuery && CHART_INTENT_RE.test(msg.originalQuery)) {
+    const parsed = parseChartFromText(answer, msg.originalQuery);
+    if (parsed) return <ChartRenderer data={parsed} />;
+  }
+
+  return <span style={{ whiteSpace: "pre-wrap" }}>{answer || "No relevant data found."}</span>;
 };
 
 // ── Main chatbot ─────────────────────────────────────────────────────────────
@@ -261,6 +309,7 @@ const SymphonyChatbot = () => {
         sender:  "bot",
         text:    data.answer || "",
         rawData: data,
+        originalQuery: resolvedQuery,
         isWelcomeMessage: false,
       });
     } catch (err) {
