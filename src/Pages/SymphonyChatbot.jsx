@@ -88,44 +88,80 @@ const ChartRenderer = ({ data }) => {
 };
 
 // ── Smart text-to-chart parser ───────────────────────────────────────────────
-// If backend returns type:"text" but user asked for a chart,
-// try to extract numbers from the answer and build chart data client-side.
 const parseChartFromText = (answer, question) => {
   if (!answer || typeof answer !== "string") return null;
+  const q = question.toLowerCase();
+  const chartType = q.includes("pie") ? "pie" : q.includes("line") ? "line" : "bar";
 
   const lines = answer.split(/\n/).map(s => s.trim()).filter(Boolean);
   const labels = [];
   const values = [];
 
-  // Pattern: "Label: 42" or "Label - 42" or "Label (42)" or "42 Label"
-  const patterns = [
-    /^(.+?)[\s]*[:\-–]\s*(\d+(?:\.\d+)?)\s*$/,
-    /^(.+?)\s*\((\d+(?:\.\d+)?)\)\s*$/,
-    /^(\d+(?:\.\d+)?)\s+(.+)$/,
-  ];
+  // Pattern 1: "Label: 42" or "Label - 42" or "Label – 42"
+  const inlinePattern = /^(.+?)[\s]*[:\-–]\s*(\d+(?:\.\d+)?)\s*(%|regulations?|items?|sections?|principles?|guidelines?)?$/i;
+  // Pattern 2: "Label (42)"
+  const parenPattern = /^(.+?)\s*\((\d+(?:\.\d+)?)\)\s*$/;
 
   lines.forEach(line => {
-    for (const pat of patterns) {
-      const m = line.match(pat);
-      if (m) {
-        const isNumFirst = pat === patterns[2];
-        const label = isNumFirst ? m[2].trim() : m[1].trim();
-        const value = parseFloat(isNumFirst ? m[1] : m[2]);
-        if (!isNaN(value) && label.length < 80) {
-          labels.push(label);
-          values.push(value);
-        }
-        break;
+    let m = line.match(inlinePattern) || line.match(parenPattern);
+    if (m) {
+      const label = m[1].trim();
+      const value = parseFloat(m[2]);
+      if (!isNaN(value) && label.length < 80 && label.length > 0) {
+        labels.push(label);
+        values.push(value);
       }
     }
   });
 
+  // Pattern 3: alternating lines — header line then pairs of (label, number)
+  // e.g. "Year\nNumber of Regulations\n2021\n6\n2020\n12"
+  if (labels.length < 2) {
+    // Find first numeric line index
+    const numericIdx = lines.findIndex(l => /^\d+(?:\.\d+)?$/.test(l));
+    if (numericIdx > 0) {
+      // Try pairs starting from numericIdx - 1 (label before first number)
+      // or try alternating label/value from the start
+      const pairs = [];
+      for (let i = 0; i < lines.length - 1; i++) {
+        const a = lines[i], b = lines[i + 1];
+        const aIsNum = /^\d+(?:\.\d+)?$/.test(a);
+        const bIsNum = /^\d+(?:\.\d+)?$/.test(b);
+        if (!aIsNum && bIsNum) {
+          pairs.push({ label: a, value: parseFloat(b) });
+          i++; // skip next since we consumed it
+        }
+      }
+      if (pairs.length >= 2) {
+        pairs.forEach(p => { labels.push(p.label); values.push(p.value); });
+      }
+    }
+  }
+
   if (labels.length >= 2) {
-    const q = question.toLowerCase();
-    const chartType = q.includes("pie") ? "pie" : q.includes("line") ? "line" : "bar";
-    return { type: "chart", chart_type: chartType, labels, values, answer };
+    return { type: "chart", chart_type: chartType, labels, values, answer: null };
   }
   return null;
+};
+
+// ── Convert table data to chart when user asked for chart ────────────────────
+const tableToChart = (columns, rows, question) => {
+  if (!columns?.length || !rows?.length) return null;
+  const q = question.toLowerCase();
+  const chartType = q.includes("pie") ? "pie" : q.includes("line") ? "line" : "bar";
+
+  // Find label col (first non-numeric col) and value col (first numeric col)
+  const firstRow = rows[0];
+  const labelCol = columns.find(c => isNaN(Number(firstRow[c])));
+  const valueCols = columns.filter(c => c !== labelCol && !isNaN(Number(firstRow[c])));
+
+  if (!labelCol || !valueCols.length) return null;
+
+  const labels = rows.map(r => String(r[labelCol] ?? ""));
+  const valueCol = valueCols[0];
+  const values = rows.map(r => Number(r[valueCol]) || 0);
+
+  return { type: "chart", chart_type: chartType, labels, values, answer: null };
 };
 
 const CHART_INTENT_RE = /\b(plot|chart|graph|visuali[sz]e|bar chart|pie chart|line chart|show.*graph|how many|count|distribution|breakdown|compare|versus|vs\.?)\b/i;
@@ -156,7 +192,7 @@ const ResultTable = ({ columns, rows }) => (
   </div>
 );
 
-// ── Bot message renderer — called at render time, not store time ─────────────
+// ── Bot message renderer ─────────────────────────────────────────────────────
 const BotMessage = ({ msg }) => {
   if (typeof msg.text === "string" && !msg.rawData) {
     return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
@@ -164,6 +200,8 @@ const BotMessage = ({ msg }) => {
 
   const data = msg.rawData;
   if (!data) return <span>{msg.text}</span>;
+
+  const isChartQuery = msg.originalQuery && CHART_INTENT_RE.test(msg.originalQuery);
 
   if (data.type === "error") {
     return (
@@ -187,8 +225,13 @@ const BotMessage = ({ msg }) => {
     return <ChartRenderer data={data} />;
   }
 
+  // Table — if user asked for chart, convert table to chart
   if (data.type === "table" && data.rows?.length > 0) {
     const cols = data.columns?.length ? data.columns : Object.keys(data.rows[0]);
+    if (isChartQuery) {
+      const chartData = tableToChart(cols, data.rows, msg.originalQuery);
+      if (chartData) return <ChartRenderer data={chartData} />;
+    }
     return (
       <div>
         {data.answer && <p style={{ marginBottom: "6px", fontSize: "13px" }}>{data.answer}</p>}
@@ -197,9 +240,9 @@ const BotMessage = ({ msg }) => {
     );
   }
 
-  // text fallback — try to parse chart from answer if user asked for one
+  // Text — if user asked for chart, try to parse numbers from answer
   const answer = data.answer || msg.text || "";
-  if (msg.originalQuery && CHART_INTENT_RE.test(msg.originalQuery)) {
+  if (isChartQuery) {
     const parsed = parseChartFromText(answer, msg.originalQuery);
     if (parsed) return <ChartRenderer data={parsed} />;
   }
