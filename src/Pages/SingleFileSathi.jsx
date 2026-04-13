@@ -61,7 +61,6 @@ export default function SingleFileSathi() {
 
   /* ── feedback — removed (Azure backend doesn't use UID feedback) ── */
 
-  const chatEndRef = useRef();
   const renderBotMessage = (msg) => {
     const data = msg.rawData;
     if (!data) return <span>{msg.text}</span>;
@@ -147,7 +146,7 @@ export default function SingleFileSathi() {
               {fileReady && <span style={s.chipReady}>✓</span>}
               <button
                 style={s.chipRemove}
-                onClick={() => { setFile(null); setFileReady(false); setS3Key(""); }}
+                onClick={() => { setFile(null); setFileReady(false); }}
               >✕</button>
             </div>
           )}

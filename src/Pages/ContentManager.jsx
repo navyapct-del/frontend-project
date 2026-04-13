@@ -26,12 +26,10 @@ export default function ContentManager(props) {
   const [currentLoc, setCurrentLoc]       = useState("");
   const [contentFlag, setContentFlag]     = useState(false);
   const [checkboxes, setCheckboxes]       = useState({ imageCheck: false, videoCheck: false, documentCheck: false });
-  const [isToggled, setIsToggled]         = useState(false);
   const [isCheckboxFilterActive, setIsCheckboxFilterActive] = useState(false);
   const [showTabulator, setShowTabulator] = useState(false);
-  const [kendraStatus, setKendraStatus]   = useState("Index Not Found");
+  const [viewMode, setViewMode]           = useState("grid"); // "grid" | "list"
 
-  // ── Define loadDocuments BEFORE any useEffect that calls it ──────────────
   const loadDocuments = useCallback(() => {
     setLoading(true);
     console.log("[ContentManager] refreshing document list...");
@@ -106,7 +104,6 @@ export default function ContentManager(props) {
 
   const handlePagination     = useCallback((e) => setCurrentPage(e.selected), []);
   const handleUploadClick    = () => setShowUpload((p) => !p);
-  const handleToggle         = () => setIsToggled((p) => !p);
   const handleTabulatorClick = () => { setShowTabulator((p) => !p); setShowUpload(false); };
 
   const handleDelete = useCallback(async (docId) => {
@@ -129,260 +126,238 @@ export default function ContentManager(props) {
 
   return (
     <div style={s.page}>
-      {isToggled ? (
-        <AdvanceSearch handleToggle={handleToggle} isToggled={isToggled} userEmail={userEmail} />
-      ) : (
-        <div style={s.card}>
+      <div style={s.card}>
 
-          {/* ── TOOLBAR ── */}
-          <div style={s.toolbar}>
-            {/* Left: title */}
-            <h2 style={s.title}>{pageTitle}</h2>
+        {/* ── TOOLBAR ── */}
+        <div style={s.toolbar}>
+          <h2 style={s.title}>{pageTitle}</h2>
 
-            {/* Centre: search + toggle */}
-            <div style={s.toolbarCentre}>
-              {!isCheckboxFilterActive && (
-                <div style={s.searchWrap}>
-                  <svg style={s.searchIcon} viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
-                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-                  </svg>
-                  <Search allData={allData} setFilteredData={setFilteredData} selectedTags={selectedTags} />
-                </div>
-              )}
-
-              {props.type === "file" && (
-                <CheckboxesFilter checkboxes={checkboxes} setCheckboxes={setCheckboxes} />
-              )}
-
-              {/* Advanced search toggle for documents */}
-              {props.type === "document" && (
-                <div style={s.toggleWrap} onClick={handleToggle}>
-                  <div style={{ ...s.toggleTrack, background: isToggled ? "#0d3347" : "#d1d5db" }}>
-                    <div style={{ ...s.toggleThumb, transform: isToggled ? "translateX(20px)" : "translateX(2px)" }} />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Right: Upload button */}
-            <button
-              style={s.uploadBtn}
-              onClick={handleUploadClick}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "#0a2535")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "#0d3347")}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
-                <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
-              </svg>
-              Upload New Files
-            </button>
-          </div>
-
-          {/* ── CONTENT ── */}
-          <div style={s.content}>
-            {showTabulator ? (
-              <TabulatorFile data={filteredData} />
-            ) : showUpload ? (
-              <Upload current_Folder={currentLoc} type={props.type} onUploadComplete={handleUploadComplete} />
-            ) : (
-              <>
-                {loading ? (
-                  <div style={s.emptyState}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
-                      <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
-                    </svg>
-                    <p style={{ color: "#9ca3af", marginTop: "12px", fontSize: "14px" }}>Loading files…</p>
-                  </div>
-                ) : contentFlag || filteredData.length === 0 ? (
-                  <div style={s.emptyState}>
-                    <p style={s.emptyText}>
-                      No files available to display. Please upload files to get started.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div style={s.grid}>
-                      <ObjectCard
-                        currentLoc={currentLoc}
-                        type={props.type}
-                        currentName={currentData.map((i) => i.name)}
-                        currentsize={currentData.map((i) => i.size)}
-                        description={currentData.map((i) => i.description)}
-                        tags={currentData.map((i) => i.tags)}
-                        date={currentData.map((i) => i.date)}
-                        ids={currentData.map((i) => i.id)}
-                        blobUrls={currentData.map((i) => i.blob_url)}
-                        flag={cardEnabled}
-                        contentFlag={contentFlag}
-                        loading={loading}
-                        onDelete={handleDelete}
-                      />
-                    </div>
-
-                    {filteredData.length > objectsPerPage && (
-                      <div style={s.paginationWrap}>
-                        <ReactPaginate
-                          previousLabel={<Lucide icon="ChevronLeft" className="w-4 h-4" />}
-                          nextLabel={<Lucide icon="ChevronRight" className="w-4 h-4" />}
-                          breakLabel="..."
-                          pageCount={Math.ceil(filteredData.length / objectsPerPage)}
-                          marginPagesDisplayed={2}
-                          pageRangeDisplayed={5}
-                          onPageChange={handlePagination}
-                          containerClassName="pagination"
-                          pageClassName="page-item"
-                          pageLinkClassName="page-link"
-                          previousClassName="page-item"
-                          previousLinkClassName="page-link"
-                          nextClassName="page-item"
-                          nextLinkClassName="page-link"
-                          breakClassName="page-item"
-                          breakLinkClassName="page-link"
-                          activeClassName="active"
-                        />
-                      </div>
-                    )}
-                  </>
-                )}
-              </>
+          <div style={s.toolbarCentre}>
+            {!isCheckboxFilterActive && (
+              <div style={s.searchWrap}>
+                <svg style={s.searchIcon} viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <Search allData={allData} setFilteredData={setFilteredData} selectedTags={selectedTags} />
+              </div>
             )}
+
+            {props.type === "file" && (
+              <CheckboxesFilter checkboxes={checkboxes} setCheckboxes={setCheckboxes} />
+            )}
+
+            {/* Grid / List view toggle */}
+            <div style={s.viewToggle}>
+              <button
+                style={{ ...s.viewBtn, background: viewMode === "grid" ? "#0d3347" : "transparent", color: viewMode === "grid" ? "#fff" : "#6b7280" }}
+                onClick={() => setViewMode("grid")}
+                title="Grid view"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+              </button>
+              <button
+                style={{ ...s.viewBtn, background: viewMode === "list" ? "#0d3347" : "transparent", color: viewMode === "list" ? "#fff" : "#6b7280" }}
+                onClick={() => setViewMode("list")}
+                title="List view"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                  <circle cx="3" cy="6" r="1" fill="currentColor"/><circle cx="3" cy="12" r="1" fill="currentColor"/><circle cx="3" cy="18" r="1" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
           </div>
 
+          <button
+            style={s.uploadBtn}
+            onClick={handleUploadClick}
+            onMouseEnter={(e) => (e.currentTarget.style.background = "#0a2535")}
+            onMouseLeave={(e) => (e.currentTarget.style.background = "#0d3347")}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/>
+              <path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/>
+            </svg>
+            Upload New Files
+          </button>
         </div>
-      )}
+
+        {/* ── CONTENT ── */}
+        <div style={s.content}>
+          {showTabulator ? (
+            <TabulatorFile data={filteredData} />
+          ) : showUpload ? (
+            <Upload current_Folder={currentLoc} type={props.type} onUploadComplete={handleUploadComplete} />
+          ) : (
+            <>
+              {loading ? (
+                <div style={s.emptyState}>
+                  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" strokeWidth="1.5">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                  </svg>
+                  <p style={{ color: "#9ca3af", marginTop: "12px", fontSize: "14px" }}>Loading files…</p>
+                </div>
+              ) : contentFlag || filteredData.length === 0 ? (
+                <div style={s.emptyState}>
+                  <p style={s.emptyText}>No files available. Please upload files to get started.</p>
+                </div>
+              ) : viewMode === "list" ? (
+                /* ── LIST VIEW ── */
+                <div style={s.listWrap}>
+                  <table style={s.listTable}>
+                    <thead>
+                      <tr style={s.listHead}>
+                        <th style={s.th}>Name</th>
+                        <th style={s.th}>Description</th>
+                        <th style={s.th}>Tags</th>
+                        <th style={s.th}>Date</th>
+                        <th style={s.th}>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {currentData.map((item, i) => (
+                        <tr key={item.id} style={{ ...s.listRow, background: i % 2 === 0 ? "#fff" : "#f8f9fb" }}>
+                          <td style={s.td}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                              </svg>
+                              <span style={{ fontWeight: 500, fontSize: "13px", color: "#1f2937" }}>{item.name}</span>
+                            </div>
+                          </td>
+                          <td style={{ ...s.td, color: "#6b7280", fontSize: "12px", maxWidth: "200px" }}>
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                              {item.description || "—"}
+                            </span>
+                          </td>
+                          <td style={{ ...s.td, fontSize: "12px", color: "#6b7280" }}>{item.tags || "—"}</td>
+                          <td style={{ ...s.td, fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap" }}>
+                            {item.date ? new Date(item.date).toLocaleDateString() : "—"}
+                          </td>
+                          <td style={s.td}>
+                            <div style={{ display: "flex", gap: "8px" }}>
+                              {item.blob_url && (
+                                <a href={item.blob_url} target="_blank" rel="noreferrer" style={s.actionBtn} title="Download">
+                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                                  </svg>
+                                </a>
+                              )}
+                              <button onClick={() => handleDelete(item.id)} style={{ ...s.actionBtn, color: "#dc2626" }} title="Delete">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <polyline points="3 6 5 6 21 6"/>
+                                  <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                /* ── GRID VIEW ── */
+                <div style={s.grid}>
+                  <ObjectCard
+                    currentLoc={currentLoc}
+                    type={props.type}
+                    currentName={currentData.map((i) => i.name)}
+                    currentsize={currentData.map((i) => i.size)}
+                    description={currentData.map((i) => i.description)}
+                    tags={currentData.map((i) => i.tags)}
+                    date={currentData.map((i) => i.date)}
+                    ids={currentData.map((i) => i.id)}
+                    blobUrls={currentData.map((i) => i.blob_url)}
+                    flag={cardEnabled}
+                    contentFlag={contentFlag}
+                    loading={loading}
+                    onDelete={handleDelete}
+                  />
+                </div>
+              )}
+
+              {filteredData.length > objectsPerPage && (
+                <div style={s.paginationWrap}>
+                  <ReactPaginate
+                    previousLabel={<Lucide icon="ChevronLeft" className="w-4 h-4" />}
+                    nextLabel={<Lucide icon="ChevronRight" className="w-4 h-4" />}
+                    breakLabel="..."
+                    pageCount={Math.ceil(filteredData.length / objectsPerPage)}
+                    marginPagesDisplayed={2}
+                    pageRangeDisplayed={5}
+                    onPageChange={handlePagination}
+                    containerClassName="pagination"
+                    pageClassName="page-item"
+                    pageLinkClassName="page-link"
+                    previousClassName="page-item"
+                    previousLinkClassName="page-link"
+                    nextClassName="page-item"
+                    nextLinkClassName="page-link"
+                    breakClassName="page-item"
+                    breakLinkClassName="page-link"
+                    activeClassName="active"
+                  />
+                </div>
+              )}
+            </>
+          )}
+        </div>
+
+      </div>
     </div>
   );
 }
 
 const s = {
-  page: {
-    fontFamily: "'Segoe UI', system-ui, sans-serif",
-    padding: "0",
-  },
-
+  page: { fontFamily: "'Segoe UI', system-ui, sans-serif", padding: "0" },
   card: {
-    background: "#ffffff",
-    borderRadius: "16px",
-    overflow: "hidden",
-    boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-    minHeight: "500px",
-    display: "flex",
-    flexDirection: "column",
+    background: "#ffffff", borderRadius: "16px", overflow: "hidden",
+    boxShadow: "0 2px 12px rgba(0,0,0,0.08)", minHeight: "500px",
+    display: "flex", flexDirection: "column",
   },
-
-  /* Toolbar */
   toolbar: {
-    display: "flex",
-    alignItems: "center",
-    gap: "16px",
-    padding: "20px 28px",
-    borderBottom: "1px solid #f0f0f0",
-    flexWrap: "wrap",
+    display: "flex", alignItems: "center", gap: "16px",
+    padding: "20px 28px", borderBottom: "1px solid #f0f0f0", flexWrap: "wrap",
   },
-  title: {
-    fontSize: "18px",
-    fontWeight: "600",
-    color: "#1a1a2e",
-    margin: 0,
-    whiteSpace: "nowrap",
-    minWidth: "100px",
+  title: { fontSize: "18px", fontWeight: "600", color: "#1a1a2e", margin: 0, whiteSpace: "nowrap", minWidth: "100px" },
+  toolbarCentre: { display: "flex", alignItems: "center", gap: "12px", flex: 1 },
+  searchWrap: { position: "relative", display: "flex", alignItems: "center" },
+  searchIcon: { position: "absolute", left: "10px", width: "16px", height: "16px", pointerEvents: "none", zIndex: 1 },
+  viewToggle: {
+    display: "flex", alignItems: "center",
+    border: "1px solid #e5e7eb", borderRadius: "8px", overflow: "hidden",
   },
-  toolbarCentre: {
-    display: "flex",
-    alignItems: "center",
-    gap: "12px",
-    flex: 1,
+  viewBtn: {
+    width: "34px", height: "34px", border: "none", cursor: "pointer",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    transition: "background 0.15s, color 0.15s",
   },
-  searchWrap: {
-    position: "relative",
-    display: "flex",
-    alignItems: "center",
-  },
-  searchIcon: {
-    position: "absolute",
-    left: "10px",
-    width: "16px",
-    height: "16px",
-    pointerEvents: "none",
-    zIndex: 1,
-  },
-
-  /* Toggle */
-  toggleWrap: {
-    cursor: "pointer",
-    display: "flex",
-    alignItems: "center",
-  },
-  toggleTrack: {
-    width: "44px",
-    height: "24px",
-    borderRadius: "12px",
-    position: "relative",
-    transition: "background 0.2s",
-  },
-  toggleThumb: {
-    position: "absolute",
-    top: "2px",
-    width: "20px",
-    height: "20px",
-    borderRadius: "50%",
-    background: "#ffffff",
-    boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
-    transition: "transform 0.2s",
-  },
-
-  /* Upload button */
   uploadBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    padding: "10px 20px",
-    background: "#0d3347",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "8px",
-    fontSize: "14px",
-    fontWeight: "600",
-    cursor: "pointer",
-    transition: "background 0.2s",
-    whiteSpace: "nowrap",
-    marginLeft: "auto",
+    display: "flex", alignItems: "center", gap: "8px", padding: "10px 20px",
+    background: "#0d3347", color: "#ffffff", border: "none", borderRadius: "8px",
+    fontSize: "14px", fontWeight: "600", cursor: "pointer", transition: "background 0.2s",
+    whiteSpace: "nowrap", marginLeft: "auto",
   },
-
-  /* Content area */
-  content: {
-    flex: 1,
-    padding: "24px 28px",
-    background: "#f8f9fb",
+  content: { flex: 1, padding: "24px 28px", background: "#f8f9fb" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "16px" },
+  listWrap: { overflowX: "auto" },
+  listTable: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
+  listHead: { background: "#f3f4f6" },
+  th: { padding: "10px 14px", textAlign: "left", fontWeight: "600", color: "#374151", borderBottom: "2px solid #e5e7eb", whiteSpace: "nowrap" },
+  listRow: { borderBottom: "1px solid #f0f0f0", transition: "background 0.1s" },
+  td: { padding: "10px 14px", verticalAlign: "middle" },
+  actionBtn: {
+    display: "inline-flex", alignItems: "center", justifyContent: "center",
+    width: "28px", height: "28px", borderRadius: "6px", border: "1px solid #e5e7eb",
+    background: "#fff", cursor: "pointer", color: "#6b7280", textDecoration: "none",
   },
-
-  grid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-    gap: "16px",
-  },
-
-  /* Empty state */
-  emptyState: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: "360px",
-  },
-  emptyText: {
-    color: "#f59e0b",
-    fontSize: "15px",
-    fontWeight: "500",
-    textAlign: "center",
-    margin: 0,
-  },
-
-  /* Pagination */
-  paginationWrap: {
-    marginTop: "24px",
-    display: "flex",
-    justifyContent: "flex-start",
-  },
+  emptyState: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "360px" },
+  emptyText: { color: "#f59e0b", fontSize: "15px", fontWeight: "500", textAlign: "center", margin: 0 },
+  paginationWrap: { marginTop: "24px", display: "flex", justifyContent: "flex-start" },
 };

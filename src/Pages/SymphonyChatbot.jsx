@@ -405,20 +405,23 @@ const SymphonyChatbot = () => {
           style={{ flex: 1, padding: "10px 14px", border: "1.5px solid #e5e7eb", borderRadius: "8px", fontSize: "14px", outline: "none", background: "#f9fafb" }}
         />
 
+        {/* Voice button */}
         {voiceSupported && (
           <button
             type="button"
             onClick={toggleVoice}
-            title={isListening ? "Stop" : "Speak"}
+            title={isListening ? "Stop listening" : "Voice input"}
             style={{
-              width: "42px", height: "42px", borderRadius: "50%", border: "none",
+              width: "42px", height: "42px", borderRadius: "8px",
+              border: isListening ? "none" : "1.5px solid #e5e7eb",
               cursor: "pointer", flexShrink: 0, display: "flex",
               alignItems: "center", justifyContent: "center",
-              background: isListening ? "#0d3347" : "#e8f4f8",
+              background: isListening ? "#0d3347" : "#f9fafb",
+              transition: "all 0.2s",
             }}
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
-              stroke={isListening ? "#7ec8e3" : "#0d3347"} strokeWidth="2"
+              stroke={isListening ? "#7ec8e3" : "#6b7280"} strokeWidth="2"
               strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
               <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
@@ -435,16 +438,29 @@ const SymphonyChatbot = () => {
           Send
         </button>
 
-        {/* Clear chat */}
+        {/* Clear chat — visible button with label */}
         <button
           type="button"
           onClick={clearMessages}
           title="Clear chat"
-          style={{ width: "42px", height: "42px", borderRadius: "8px", background: "#f3f4f6", border: "1px solid #e5e7eb", cursor: "pointer", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", color: "#6b7280" }}
+          style={{
+            height: "42px", padding: "0 14px", borderRadius: "8px",
+            background: "#fff", border: "1.5px solid #e5e7eb",
+            cursor: "pointer", flexShrink: 0, display: "flex",
+            alignItems: "center", gap: "6px",
+            color: "#6b7280", fontSize: "13px", fontWeight: "500",
+            transition: "border-color 0.15s, color 0.15s",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#dc2626"; e.currentTarget.style.color = "#dc2626"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e5e7eb"; e.currentTarget.style.color = "#6b7280"; }}
         >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
+            <path d="M10 11v6"/><path d="M14 11v6"/>
+            <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
           </svg>
+          Clear
         </button>
       </form>
     </div>
