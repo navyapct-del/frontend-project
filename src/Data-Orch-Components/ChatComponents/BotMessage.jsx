@@ -75,12 +75,33 @@ function tableToChart(columns, rows, question) {
 }
 
 export function BotMessage({ msg }) {
+  // Handle plain string messages (welcome, errors from catch)
   if (typeof msg.text === "string" && !msg.rawData) {
+    // Check if the text itself is a JSON response that wasn't parsed
+    if (msg.text.trim().startsWith("{") || msg.text.trim().startsWith("[")) {
+      try {
+        const parsed = JSON.parse(msg.text);
+        if (parsed && parsed.type) {
+          // Re-render as structured data
+          return <BotMessage msg={{ ...msg, text: parsed.answer || "", rawData: parsed }} />;
+        }
+      } catch {}
+    }
     return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
   }
 
   const data = msg.rawData;
-  if (!data) return <span>{msg.text}</span>;
+  if (!data) return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
+
+  // If answer itself is a JSON string (backend returned JSON inside answer field)
+  if (typeof data.answer === "string" && data.answer.trim().startsWith("{")) {
+    try {
+      const innerParsed = JSON.parse(data.answer);
+      if (innerParsed && innerParsed.type) {
+        return <BotMessage msg={{ ...msg, text: innerParsed.answer || "", rawData: innerParsed }} />;
+      }
+    } catch {}
+  }
 
   const isChartQuery = msg.originalQuery && CHART_INTENT_RE.test(msg.originalQuery);
 

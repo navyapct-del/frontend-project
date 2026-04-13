@@ -70,6 +70,11 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${AZURE_BASE_URL}/upload`);
 
+      // Append extra fields to formData before sending
+      Object.entries(extraFields).forEach(([k, v]) => {
+        if (!formData.has(k)) formData.append(k, v);
+      });
+
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
       };
