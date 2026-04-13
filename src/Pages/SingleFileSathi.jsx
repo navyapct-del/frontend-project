@@ -86,7 +86,7 @@ export default function SingleFileSathi() {
       addMessage({
         id: `err-${Date.now()}`,
         role: "bot",
-        text: "Unsupported file type. Please upload a JPG, PNG, PDF, or CSV file.",
+        text: "Unsupported file type. Please upload a JPG, PNG, PDF, CSV, Excel, or Word file.",
         rawData: null,
         isError: true,
       });
@@ -382,7 +382,7 @@ export default function SingleFileSathi() {
             <input
               ref={fileRef}
               type="file"
-              accept=".jpg,.jpeg,.png,.pdf,.csv,image/jpeg,image/png,application/pdf,text/csv"
+              accept=".jpg,.jpeg,.png,.gif,.svg,.pdf,.csv,.xls,.xlsx,.doc,.docx,.txt,image/*,application/pdf,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
               style={{ display: "none" }}
               onChange={(e) => pickFile(e.target.files[0])}
             />

@@ -75,35 +75,42 @@ function tableToChart(columns, rows, question) {
 }
 
 export function BotMessage({ msg }) {
-  // Handle plain string messages (welcome, errors from catch)
+  // Normalize: extract rawData from text if it's a JSON string
+  let resolvedMsg = msg;
+
   if (typeof msg.text === "string" && !msg.rawData) {
-    // Check if the text itself is a JSON response that wasn't parsed
-    if (msg.text.trim().startsWith("{") || msg.text.trim().startsWith("[")) {
+    const trimmed = msg.text.trim();
+    if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
       try {
-        const parsed = JSON.parse(msg.text);
+        const parsed = JSON.parse(trimmed);
         if (parsed && parsed.type) {
-          // Re-render as structured data
-          return <BotMessage msg={{ ...msg, text: parsed.answer || "", rawData: parsed }} />;
+          resolvedMsg = { ...msg, text: parsed.answer || "", rawData: parsed };
         }
       } catch {}
     }
-    return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
   }
 
-  const data = msg.rawData;
-  if (!data) return <span style={{ whiteSpace: "pre-wrap" }}>{msg.text}</span>;
+  const { text, rawData, originalQuery } = resolvedMsg;
 
-  // If answer itself is a JSON string (backend returned JSON inside answer field)
-  if (typeof data.answer === "string" && data.answer.trim().startsWith("{")) {
-    try {
-      const innerParsed = JSON.parse(data.answer);
-      if (innerParsed && innerParsed.type) {
-        return <BotMessage msg={{ ...msg, text: innerParsed.answer || "", rawData: innerParsed }} />;
-      }
-    } catch {}
+  // If rawData.answer is itself a JSON string, unwrap it
+  let data = rawData;
+  if (data && typeof data.answer === "string") {
+    const trimmedAnswer = data.answer.trim();
+    if (trimmedAnswer.startsWith("{") || trimmedAnswer.startsWith("[")) {
+      try {
+        const inner = JSON.parse(trimmedAnswer);
+        if (inner && inner.type) {
+          data = inner;
+        }
+      } catch {}
+    }
   }
 
-  const isChartQuery = msg.originalQuery && CHART_INTENT_RE.test(msg.originalQuery);
+  if (!data) {
+    return <span style={{ whiteSpace: "pre-wrap" }}>{text || ""}</span>;
+  }
+
+  const isChartQuery = originalQuery && CHART_INTENT_RE.test(originalQuery);
 
   if (data.type === "error") {
     return (
