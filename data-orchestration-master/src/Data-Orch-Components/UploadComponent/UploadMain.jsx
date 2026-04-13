@@ -8,8 +8,8 @@ function Upload(props) {
 
   return (
     <div className="upload-component">
-      {type === "image" && <ImageUpload {...props} />}
-      {type === "video" && <VideoUpload {...props} />}
+      {type === "image"    && <ImageUpload    {...props} />}
+      {type === "video"    && <VideoUpload    {...props} />}
       {type === "document" && <DocumentUpload {...props} />}
     </div>
   );

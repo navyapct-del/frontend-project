@@ -1,269 +1,253 @@
 import React, { useState } from "react";
-import DocumentModal from "./DocumentModal";
-import ImageModal from "./ImageModal";
-import documentUrl from "../../assets/images/folder.png";
-import VideoModal from "../../Data-Orch-Components/CardsComponent/VideoModal";
-import pdf_Url from "../../assets/images/pdf.png";
-import docx_Url from "../../assets/images/docx.png";
-import text_Url from "../../assets/images/text.png";
-import other_Url from "../../assets/images/other.png";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import "videojs-contrib-quality-levels";
-import "videojs-http-source-selector";
+import pdf_Url    from "../../assets/images/pdf.png";
+import docx_Url   from "../../assets/images/docx.png";
+import text_Url   from "../../assets/images/text.png";
+import other_Url  from "../../assets/images/other.png";
 
-// Utility function for formatting dates
+// ── File-type helpers ────────────────────────────────────────────────────────
+
+const IMAGE_EXTS    = new Set(["jpg","jpeg","png","gif","bmp","webp","svg"]);
+const VIDEO_EXTS    = new Set(["mp4","mov","avi","mkv","webm"]);
+const PDF_EXTS      = new Set(["pdf"]);
+const WORD_EXTS     = new Set(["doc","docx"]);
+const EXCEL_EXTS    = new Set(["xls","xlsx","csv"]);
+const TEXT_EXTS     = new Set(["txt","md","json","xml","yaml","yml"]);
+
+const getExt = (filename) =>
+  (filename || "").split(".").pop().toLowerCase().split("?")[0];
+
+const getFileIcon = (ext) => {
+  if (PDF_EXTS.has(ext))   return pdf_Url;
+  if (WORD_EXTS.has(ext))  return docx_Url;
+  if (TEXT_EXTS.has(ext))  return text_Url;
+  return other_Url;
+};
+
 const formatDate = (dateString) => {
-  const date = new Date(dateString);
-  const year = date.toLocaleString("default", { year: "numeric" });
-  const month = date.toLocaleString("default", { month: "2-digit" });
-  const day = date.toLocaleString("default", { day: "2-digit" });
-  const time = date.toLocaleString().split(",")[1].trim();
-  return `${day}-${month}-${year} ${time}`;
+  if (!dateString) return "";
+  try {
+    const date  = new Date(dateString);
+    const day   = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year  = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  } catch {
+    return dateString;
+  }
 };
 
-// Mapping for file extensions to image URLs
-const fileIcons = {
-  pdf: pdf_Url,
-  docx: docx_Url,
-  doc: docx_Url,
-  txt: text_Url,
-  default: other_Url,
-};
+const truncate = (str, n = 16) =>
+  str && str.length > n ? str.slice(0, n) + "…" : str;
+
+// ── Card component ───────────────────────────────────────────────────────────
 
 const Cards = (props) => {
-  const [showDocumentModal, setShowDocumentModal] = useState(false);
-  const [showPreview, setShowPreview] = useState(false);
+  const [showDetail, setShowDetail] = useState(false);
 
-  const handleCloseBothModals = () => {
-    setShowDocumentModal(false);
-    setShowPreview(false); // Close the preview modal
-  };
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [showVideoModal, setShowVideoModal] = useState(false);
+  const filename   = props.name   || "Unknown file";
+  const blobUrl    = props.blobUrl || "";
+  const ext        = getExt(filename);
+  const isImage    = IMAGE_EXTS.has(ext);
+  const isVideo    = VIDEO_EXTS.has(ext);
+  const fileIcon   = getFileIcon(ext);
+  const shortName  = truncate(filename.split("/").pop(), 16);
+  const dateStr    = formatDate(props.objdate);
+  const tags       = (props.tags || "").replace(/[{}'[\]]/g, "");
+  const desc       = props.description || "";
 
-  const fileExtension = props.name.split(".").pop().toLowerCase();
-  const documentName = fileIcons[fileExtension] || fileIcons.default;
-
-  const cloudfrontFileLink = `https://dwmovw8jpo7wl.cloudfront.net/${props.name.replace(
-    / /g,
-    "%20"
-  )}`;
-
-  // const cloudfrontFileLink = `https://d3te6sdt3808us.cloudfront.net/${props.name.replace(
-  //   / /g,
-  //   "%20"
-  // )}`;
-
-  const fileDetails = {
-    name: props.name,
-    date: formatDate(props.objdate),
-    description: props.description,
-    tags: props.tags.replace(/[{}'[\]]/g, ""),
-    type: fileExtension,
-    size: props.size,
-  };
-
-  const options = {
-    sources: [
-      {
-        src:
-          "https://data-orch-destination.s3.ap-south-1.amazonaws.com/" +
-          props.name,
-        type: "application/x-mpegURL",
-        withCredentials: false,
-      },
-    ],
-
-    muted: false,
-    language: "en",
-    preload: "auto",
-    fluid: true,
-    height: "200px",
-    width: "300px",
-    aspectRatio: "16:9",
-    preferFullWindow: true,
-    responsive: true,
-    playbackRates: [0.5, 1, 1.5, 2],
-    html5: {
-      hls: {
-        overrideNative: true,
-        limitRenditionByPlayerDimensions: true,
-        useDevicePixelRatio: true,
-      },
-      nativeAudioTracks: true,
-      nativeVideoTracks: false,
-      useBandwidthFromLocalStorage: true,
-    },
-    controlBar: {
-      pictureInPictureToggle: false,
-    },
-    poster: {
-      src:
-        "https://data-orch-destination.s3.ap-south-1.amazonaws.com/" +
-        props.name,
-    },
-  };
-
-  const renderFolder = () => (
-    <div className="file box rounded-md px-5 pt-8 pb-5 sm:px-5 relative zoom-in z-0">
-      <div className="absolute left-0 top-0 mt-3 ml-3"></div>
-      <div className="w-3/5 file__icon file__icon--image mx-auto">
-        <div className="file__icon--image__preview image-fit">
-          <img
-            alt="Folder"
-            src={documentUrl}
-            onClick={() => props.setFolder(props.name)}
-          />
-        </div>
-      </div>
-      <a href="#" className="block font-medium mt-4 text-center truncate">
-        {props.name.split("/").slice(-2)[0].slice(0, 8)}
-      </a>
-      <div className="text-slate-500 text-xs text-center mt-0.5">
-        {formatDate(props.objdate)}
-      </div>
-    </div>
-  );
-
-  const renderDocument = () => (
+  return (
     <>
-      <div className="file box rounded-md px-5 pt-8 pb-5 sm:px-5 relative zoom-in">
-        <div className="absolute left-0 top-0 mt-3 ml-3"></div>
-        <div className="w-3/5 file__icon file__icon--image mx-auto">
-          <div className="file__icon--image__preview image-fit">
+      {/* ── Card tile ── */}
+      <div
+        style={s.card}
+        onClick={() => setShowDetail(true)}
+        title={filename}
+      >
+        {/* Thumbnail */}
+        <div style={s.thumb}>
+          {isImage && blobUrl ? (
             <img
-              alt="Document"
-              src={documentName}
-              onClick={() => setShowDocumentModal(true)}
+              src={blobUrl}
+              alt={filename}
+              style={s.thumbImg}
+              onError={(e) => { e.currentTarget.src = other_Url; }}
             />
+          ) : isVideo && blobUrl ? (
+            <video src={blobUrl} style={s.thumbImg} muted />
+          ) : (
+            <img src={fileIcon} alt={ext} style={s.thumbIcon} />
+          )}
+        </div>
+
+        {/* Name */}
+        <div style={s.name}>{shortName}</div>
+
+        {/* Date */}
+        {dateStr && <div style={s.date}>{dateStr}</div>}
+
+        {/* Extension badge */}
+        <span style={s.badge}>{ext.toUpperCase()}</span>
+      </div>
+
+      {/* ── Detail panel (click to open) ── */}
+      {showDetail && (
+        <div style={s.overlay} onClick={() => setShowDetail(false)}>
+          <div style={s.panel} onClick={(e) => e.stopPropagation()}>
+            <button style={s.closeBtn} onClick={() => setShowDetail(false)}>✕</button>
+
+            <div style={s.panelThumb}>
+              {isImage && blobUrl ? (
+                <img src={blobUrl} alt={filename} style={{ maxWidth: "100%", maxHeight: "260px", borderRadius: "8px" }} />
+              ) : isVideo && blobUrl ? (
+                <video src={blobUrl} controls style={{ maxWidth: "100%", maxHeight: "260px", borderRadius: "8px" }} />
+              ) : (
+                <img src={fileIcon} alt={ext} style={{ width: "80px", height: "80px" }} />
+              )}
+            </div>
+
+            <h3 style={s.panelTitle}>{filename.split("/").pop()}</h3>
+
+            {dateStr    && <p style={s.meta}><b>Date:</b> {dateStr}</p>}
+            {desc       && <p style={s.meta}><b>Description:</b> {desc}</p>}
+            {tags       && <p style={s.meta}><b>Tags:</b> {tags}</p>}
+            {props.size && <p style={s.meta}><b>Size:</b> {props.size}</p>}
+
+            {blobUrl && (
+              <a
+                href={blobUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={s.openBtn}
+              >
+                Open / Download
+              </a>
+            )}
           </div>
         </div>
-        <div className="block font-medium mt-4 text-center truncate">
-          {props.name.split("/").pop().slice(0, 8)}...
-        </div>
-        <div className="text-slate-500 text-xs text-center mt-0.5">
-          {formatDate(props.objdate)}
-        </div>
-      </div>
-      <DocumentModal
-        showModal={showDocumentModal}
-        onClose={handleCloseBothModals}
-        cloudfrontFileLink={cloudfrontFileLink}
-        documentName={documentName}
-        fileDetails={fileDetails}
-        showPreview={showPreview}
-        setShowPreview={setShowPreview}
-      />
+      )}
     </>
   );
+};
 
-  const renderImage = () => (
-    <>
-      <div className="file box rounded-md px-5 pt-8 pb-5 sm:px-5 relative zoom-in">
-        <div className="absolute left-0 top-0 mt-3 ml-3"></div>
-        <div className="w-3/5 file__icon file__icon--image mx-auto">
-          <div className="file__icon--image__preview image-fit">
-            <img
-              alt="Image"
-              src={cloudfrontFileLink}
-              onClick={() => setShowImageModal(true)}
-            />
-          </div>
-        </div>
-        <div className="block font-medium mt-4 text-center truncate">
-          {props.name.split("/").pop().slice(0, 8)}...
-        </div>
-        <div className="text-slate-500 text-xs text-center mt-0.5">
-          {formatDate(props.objdate)}
-        </div>
-      </div>
-      <ImageModal
-        showModal={showImageModal}
-        onClose={() => setShowImageModal(false)}
-        cloudfrontFileLink={cloudfrontFileLink}
-        fileDetails={fileDetails}
-      />
-    </>
-  );
+// ── Styles ───────────────────────────────────────────────────────────────────
 
-  const renderVideo = () => (
-    <>
-      <div className="file box rounded-md px-5 pt-8 pb-5 sm:px-5 relative zoom-in">
-        <div className="absolute left-0 top-0 mt-3 ml-3"></div>
-        <div
-          className="w-3/5 file__icon file__icon--image mx-auto"
-          onClick={() => setShowVideoModal(true)}
-        >
-          <div className="file__icon--image__preview image-fit mx-auto">
-            <video
-              alt="Video"
-              src={cloudfrontFileLink}
-              className="md:h-24 lg:h-24 xl:h-24 2xl:h-28"
-            />
-          </div>
-        </div>
-        <div className="block font-medium mt-4 text-center truncate">
-          {props.name.split("/").pop().slice(0, 8)}...
-        </div>
-        <div className="text-slate-500 text-xs text-center mt-0.5">
-          {formatDate(props.objdate)}
-        </div>
-      </div>
-      <VideoModal
-        showModal={showVideoModal}
-        onClose={() => setShowVideoModal(false)}
-        videoSrc={cloudfrontFileLink}
-        fileDetails={fileDetails}
-      />
-    </>
-  );
+const s = {
+  card: {
+    background:   "#ffffff",
+    border:       "1px solid #e5e7eb",
+    borderRadius: "10px",
+    padding:      "14px 10px 10px",
+    cursor:       "pointer",
+    display:      "flex",
+    flexDirection:"column",
+    alignItems:   "center",
+    gap:          "6px",
+    transition:   "box-shadow 0.15s",
+    position:     "relative",
+    userSelect:   "none",
+  },
+  thumb: {
+    width:          "64px",
+    height:         "64px",
+    display:        "flex",
+    alignItems:     "center",
+    justifyContent: "center",
+    overflow:       "hidden",
+    borderRadius:   "6px",
+    background:     "#f3f4f6",
+  },
+  thumbImg: {
+    width:      "100%",
+    height:     "100%",
+    objectFit:  "cover",
+  },
+  thumbIcon: {
+    width:  "44px",
+    height: "44px",
+    objectFit: "contain",
+  },
+  name: {
+    fontSize:   "12px",
+    fontWeight: "600",
+    color:      "#1f2937",
+    textAlign:  "center",
+    wordBreak:  "break-all",
+    lineHeight: "1.3",
+  },
+  date: {
+    fontSize: "10px",
+    color:    "#9ca3af",
+  },
+  badge: {
+    fontSize:     "9px",
+    fontWeight:   "700",
+    background:   "#e0f2fe",
+    color:        "#0369a1",
+    borderRadius: "4px",
+    padding:      "1px 5px",
+    letterSpacing:"0.05em",
+  },
 
-  const renderMedia = () => (
-    <>
-      <div className="file box rounded-md px-5 pt-8 pb-5 sm:px-5 relative zoom-in">
-        <div className="absolute left-0 top-0 mt-3 ml-3"></div>
-        <div className="w-4/5 h-36 file__icon file__icon--image mx-auto">
-          <div
-            className="file__icon--image__preview image-fit"
-            onClick={() => setShowMediaModal(true)}
-          >
-            <video
-              width="95%"
-              height="100%"
-              poster="https://th.bing.com/th/id/OIP.hTRblcX_DPa_dbLBZSkFDgHaEM?pid=ImgDet&w=200&h=113&c=7&dpr=1.5"
-              className="rounded-md"
-            />
-          </div>
-        </div>
-        <div className="block font-medium mt-4 text-center truncate">
-          {props.name.split("/").pop().slice(0, 8)}...
-        </div>
-        <div className="text-slate-500 text-xs text-center mt-0.5">
-          {formatDate(props.objdate)}
-        </div>
-      </div>
-      <MediaModal
-        showModal={showMediaModal}
-        onClose={() => setShowMediaModal(false)}
-        cloudfrontFileLink={cloudfrontFileLink}
-        fileDetails={fileDetails}
-        subtitle={props.subtitle}
-      />
-    </>
-  );
-
-  return props.name.endsWith("/")
-    ? renderFolder()
-    : props.name.split("/").slice(1)[0] === "image"
-    ? renderImage()
-    : props.name.split("/").slice(1)[0] === "video"
-    ? renderVideo()
-    : props.type === "media"
-    ? renderMedia()
-    : props.name.split("/").slice(1)[0] === "document"
-    ? renderDocument()
-    : renderDocument(); // Fallback to renderDocument for other types
+  // Detail overlay
+  overlay: {
+    position:       "fixed",
+    inset:          0,
+    background:     "rgba(0,0,0,0.45)",
+    zIndex:         1000,
+    display:        "flex",
+    alignItems:     "center",
+    justifyContent: "center",
+  },
+  panel: {
+    background:   "#ffffff",
+    borderRadius: "14px",
+    padding:      "28px 32px",
+    maxWidth:     "480px",
+    width:        "90%",
+    position:     "relative",
+    boxShadow:    "0 20px 60px rgba(0,0,0,0.2)",
+    maxHeight:    "85vh",
+    overflowY:    "auto",
+  },
+  closeBtn: {
+    position:   "absolute",
+    top:        "14px",
+    right:      "16px",
+    background: "none",
+    border:     "none",
+    fontSize:   "18px",
+    cursor:     "pointer",
+    color:      "#6b7280",
+  },
+  panelThumb: {
+    display:        "flex",
+    justifyContent: "center",
+    marginBottom:   "16px",
+  },
+  panelTitle: {
+    fontSize:     "15px",
+    fontWeight:   "700",
+    color:        "#111827",
+    marginBottom: "12px",
+    wordBreak:    "break-all",
+  },
+  meta: {
+    fontSize:     "13px",
+    color:        "#374151",
+    marginBottom: "6px",
+    lineHeight:   "1.5",
+  },
+  openBtn: {
+    display:        "inline-block",
+    marginTop:      "16px",
+    padding:        "10px 20px",
+    background:     "#0d3347",
+    color:          "#ffffff",
+    borderRadius:   "8px",
+    fontSize:       "13px",
+    fontWeight:     "600",
+    textDecoration: "none",
+  },
 };
 
 export default Cards;

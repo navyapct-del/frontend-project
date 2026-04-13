@@ -7,9 +7,8 @@ import {
   Preview,
 } from "@/base-components";
 import { LoadingIcon } from "@/base-components";
-import AdvanceSearchTags from "./AdvanceSearchTags";
 import QuerySummarization from "./QuerySummarization";
-import Kendra from "../KendraComponent/Kendra";
+import { queryDocuments } from "../../config/AzureApi";
 
 function AdvanceSearch({ handleToggle, isToggled, userEmail, type }) {
   const [searchResults, setSearchResults] = useState([]);
@@ -29,51 +28,41 @@ function AdvanceSearch({ handleToggle, isToggled, userEmail, type }) {
   const officelink = "https://view.officeapps.live.com/op/embed.aspx?src=";
 
   const fetchSearchResults = async () => {
+    if (!searchQuery.trim()) return;
     setHasSearched(true);
     setLoading(true);
 
+    console.log("[AdvanceSearch] query:", searchQuery);
+
     try {
-      const response = await fetch(
-        "https://2c5owgz3oe.execute-api.ap-south-1.amazonaws.com/Dev/develoment",
-        // "https://vkij0y39nl.execute-api.ap-south-1.amazonaws.com/Dev/develoment",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            actionone: "kendra_query",
-            query: searchQuery,
-            email: userEmail,
-            comprehend: [],
-            manual_tags: [],
-            filter: false,
-          }),
-        }
-      );
-      const data = await response.json();
+      const data = await queryDocuments(searchQuery);
+      console.log("[AdvanceSearch] response:", data);
 
-      console.log("API Response Data:", data);
-      console.log("Result Items:", data.res?.ResultItems);
+      if (data.type === "error") {
+        setSearchResults([]);
+        setQuerySummarization({ query: searchQuery, answer: data.answer || "No results found." });
+        setResponseData(data);
+        return;
+      }
 
-      const results =
-        data.res?.ResultItems?.map((item) => ({
-          title: item.DocumentTitle?.Text,
-          excerpt: item.DocumentExcerpt?.Text,
-          uri: item.DocumentURI || "no uri",
-        })) || [];
+      // Map Azure response → result items for display
+      const sources = data.sources || [];
+      const results = sources.map((s) => ({
+        title:   s.filename || "Document",
+        excerpt: s.summary  || "",
+        uri:     s.blob_url || "",
+      }));
 
-      console.log("Fetched Results:", results);
       setSearchResults(results);
       setResponseData(data);
-
       setQuerySummarization({
-        query: searchQuery,
-        answer: data.llm_result || "",
+        query:  searchQuery,
+        answer: data.answer || "",
       });
     } catch (error) {
-      console.error("Error fetching search results:", error);
+      console.error("[AdvanceSearch] error:", error);
       setSearchResults([]);
+      setQuerySummarization({ query: searchQuery, answer: `Error: ${error.message}` });
     } finally {
       setLoading(false);
     }
@@ -113,14 +102,7 @@ function AdvanceSearch({ handleToggle, isToggled, userEmail, type }) {
   return (
     <>
       <div className="col-span-12 lg:col-span-3 2xl:col-span-2">
-        {hasSearched && !loading && responseData && (
-          <AdvanceSearchTags
-            data={responseData}
-            searchQuery={searchQuery}
-            userEmail={userEmail}
-            onFilteredResultsChange={handleFilteredResultsChange}
-          />
-        )}
+        {/* Tag filtering removed — was Kendra-specific */}
       </div>
       <div className="col-span-12 lg:col-span-9 2xl:col-span-10">
         <div className="intro-y flex flex-col-reverse sm:flex-row items-center">

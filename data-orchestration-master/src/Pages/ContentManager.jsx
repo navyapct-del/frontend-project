@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState, useCallback } from "react";
 import { AccountContext } from "../config/Account";
 import ObjectCard from "../Data-Orch-Components/CardsComponent/ObjectCard";
-import { listObjects } from "../config/ApiCall";
+import { listDocuments, deleteDocument } from "../config/AzureApi";
 import ReactPaginate from "react-paginate";
 import { Lucide } from "@/base-components";
 import TagFilter from "../Data-Orch-Components/TagsFilter";
@@ -31,6 +31,38 @@ export default function ContentManager(props) {
   const [showTabulator, setShowTabulator] = useState(false);
   const [kendraStatus, setKendraStatus]   = useState("Index Not Found");
 
+  // ── Define loadDocuments BEFORE any useEffect that calls it ──────────────
+  const loadDocuments = useCallback(() => {
+    setLoading(true);
+    console.log("[ContentManager] refreshing document list...");
+    listDocuments()
+      .then((data) => {
+        const normalized = Array.isArray(data)
+          ? data.map((d) => ({
+              id:          d.id,
+              name:        d.filename,
+              description: d.summary  || "",
+              tags:        Array.isArray(d.tags) ? d.tags.join(", ") : (d.tags || ""),
+              date:        d.created_at || d.timestamp || new Date().toISOString(),
+              size:        d.size || "",
+              blob_url:    d.blob_url || "",
+              file_type:   "document",
+            }))
+          : [];
+        console.log("[ContentManager] normalized docs:", normalized.length);
+        setAllData(normalized);
+        setFilteredData(normalized);
+        setContentFlag(normalized.length === 0);
+      })
+      .catch((e) => { console.error("[ContentManager] listDocuments error:", e); setContentFlag(true); })
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleUploadComplete = useCallback(() => {
+    setShowUpload(false);
+    loadDocuments();
+  }, [loadDocuments]);
+
   useEffect(() => {
     if (userdetails && props.type) {
       const location = props.type !== "file" ? `${userEmail}/${props.type}/` : `${userEmail}/`;
@@ -40,17 +72,10 @@ export default function ContentManager(props) {
   }, [props.type, userdetails]);
 
   useEffect(() => {
-    if (props.type) {
-      setLoading(true);
-      listObjects(props.type, currentLoc)
-        .then((data) => {
-          if (Array.isArray(data)) { setAllData(data); setFilteredData(data); setContentFlag(false); }
-          else { setAllData([]); setFilteredData([]); setContentFlag(true); }
-        })
-        .catch((e) => console.error(e))
-        .finally(() => setLoading(false));
-    }
-  }, [checkboxes, currentLoc, props.type]);
+    console.log("[ContentManager] mount | type=", props.type);
+    if (!props.type) return;
+    loadDocuments();
+  }, [props.type, loadDocuments]);
 
   useEffect(() => {
     if (selectedTags.length > 0)
@@ -83,6 +108,17 @@ export default function ContentManager(props) {
   const handleUploadClick    = () => setShowUpload((p) => !p);
   const handleToggle         = () => setIsToggled((p) => !p);
   const handleTabulatorClick = () => { setShowTabulator((p) => !p); setShowUpload(false); };
+
+  const handleDelete = useCallback(async (docId) => {
+    if (!window.confirm("Delete this document? This cannot be undone.")) return;
+    try {
+      await deleteDocument(docId);
+      setAllData((prev) => prev.filter((d) => d.id !== docId));
+      setFilteredData((prev) => prev.filter((d) => d.id !== docId));
+    } catch (e) {
+      alert(`Delete failed: ${e.message}`);
+    }
+  }, []);
 
   const currentData = (filteredData || []).slice(indexOfFirstObject, indexOfLastObject);
 
@@ -148,7 +184,7 @@ export default function ContentManager(props) {
             {showTabulator ? (
               <TabulatorFile data={filteredData} />
             ) : showUpload ? (
-              <Upload current_Folder={currentLoc} type={props.type} />
+              <Upload current_Folder={currentLoc} type={props.type} onUploadComplete={handleUploadComplete} />
             ) : (
               <>
                 {loading ? (
@@ -175,9 +211,12 @@ export default function ContentManager(props) {
                         description={currentData.map((i) => i.description)}
                         tags={currentData.map((i) => i.tags)}
                         date={currentData.map((i) => i.date)}
+                        ids={currentData.map((i) => i.id)}
+                        blobUrls={currentData.map((i) => i.blob_url)}
                         flag={cardEnabled}
                         contentFlag={contentFlag}
                         loading={loading}
+                        onDelete={handleDelete}
                       />
                     </div>
 

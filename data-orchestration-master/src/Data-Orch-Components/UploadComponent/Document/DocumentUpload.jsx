@@ -1,10 +1,9 @@
 import { CloudUploadIcon, XCircleIcon } from "@heroicons/react/outline";
 import React, { useRef } from "react";
 import state, { useState, useEffect, useContext } from "react";
-import { v4 as uuid } from "uuid";
 import { AccountContext } from "../../../config/Account";
 import { LoadingIcon } from "@/base-components";
-import { getUploadData } from "../../../config/ApiCall"; // Update the path as needed
+import { uploadDocument } from "../../../config/AzureApi";
 import { documentextention } from "../FileExtensions";
 import {
   Lucide,
@@ -14,7 +13,6 @@ import {
   Notification,
   Preview,
 } from "@/base-components";
-import { set } from "lodash";
 
 function DocumentUpload(props) {
   const [successModalPreview, setSuccessModalPreview] = useState(false);
@@ -63,20 +61,48 @@ function DocumentUpload(props) {
     setFormatNotSupportedDisable(false);
     setLoading(true);
     setStaticBackdropModalPreview(true);
-    try {
-      await getUploadData(inputFields, userEmail, props.current_Folder);
-      setStaticBackdropModalPreview(true);
-      setLoading(false);
+
+    const results = [];
+    const errors  = [];
+
+    for (const field of inputFields) {
+      const file = field.selectedFile?.[0];
+      if (!file) continue;
+
+      const description = field.description || "";
+      const tags        = (field.tags || []).join(", ");
+
+      console.log("[DocumentUpload] Uploading:", file.name, "| desc:", description, "| tags:", tags);
+
+      try {
+        const response = await uploadDocument(file, description, tags);
+        console.log("[DocumentUpload] Upload success:", response);
+        results.push(response);
+      } catch (err) {
+        console.error("[DocumentUpload] Upload failed for", file.name, ":", err);
+        errors.push({ file: file.name, error: err.message });
+      }
+    }
+
+    setLoading(false);
+
+    if (errors.length > 0) {
+      console.error("[DocumentUpload] Some uploads failed:", errors);
+    }
+
+    if (results.length > 0) {
+      console.log("[DocumentUpload] All uploads complete. IDs:", results.map(r => r.id));
       setInputfields([]);
       setImages([]);
-    } catch (error) {
-      console.error("Error uploading files:", error);
-      setLoading(false);
     }
   };
 
   const RefreshPage = () => {
-    window.location.reload();
+    if (typeof props.onUploadComplete === "function") {
+      props.onUploadComplete();
+    } else {
+      window.location.reload();
+    }
   };
 
   const handleremove = (index) => {
@@ -245,7 +271,7 @@ function DocumentUpload(props) {
                       {inputFields.map((x, i) => {
                         console.log("selected file line 262", inputFields[i]);
                         return (
-                          <>
+                          <React.Fragment key={i}>
                             <div className="grid grid-cols-12 gap-4">
                               {filepath[1] === "document" ? (
                                 <div className="col-span-12  lg:col-span-4 mt-3">
@@ -408,7 +434,7 @@ function DocumentUpload(props) {
                                 </button>
                               )}
                             </div>
-                          </>
+                          </React.Fragment>
                         );
                       })}
 
