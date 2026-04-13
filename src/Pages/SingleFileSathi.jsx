@@ -1,21 +1,18 @@
 import React, { useState, useRef } from "react";
 import { LoadingIcon } from "@/base-components";
-
-const PRESIGN_API = "https://689xmudpbk.execute-api.ap-south-1.amazonaws.com/dev/";
-const CHAT_API    = "https://z5y127dmhh.execute-api.ap-south-1.amazonaws.com/Dev/data_symphony";
-const BUCKET      = "data-symphony-upload-v1";
+import { uploadDocument, queryDocuments } from "../config/AzureApi";
 
 export default function SingleFileSathi() {
   const [file, setFile]           = useState(null);
   const [uploading, setUploading] = useState(false);
   const [fileReady, setFileReady] = useState(false);
-  const [s3Key, setS3Key]         = useState("");
   const [uploadErr, setUploadErr] = useState("");
   const [messages, setMessages]   = useState([
     { role: "bot", text: "Welcome to Files Knowledge Bot, How can I help you today?" },
   ]);
   const [input, setInput]         = useState("");
   const [thinking, setThinking]   = useState(false);
+  const [history, setHistory]     = useState([]);
 
   const fileRef    = useRef();
   const chatEndRef = useRef();
@@ -28,21 +25,14 @@ export default function SingleFileSathi() {
     setUploadErr("");
     setUploading(true);
     try {
-      const res = await fetch(PRESIGN_API, {
-        method: "POST",
-        body: JSON.stringify({ key: f.name }),
-      });
-      const presignedUrl = await res.json();
-      await fetch(presignedUrl, { method: "PUT", body: f });
-      const key = `s3://${BUCKET}/${f.name}`;
-      setS3Key(key);
+      await uploadDocument(f, "", "");
       setFileReady(true);
       setMessages((prev) => [
         ...prev,
         { role: "bot", text: `✓ "${f.name}" uploaded successfully. Ask me anything about it!` },
       ]);
-    } catch {
-      setUploadErr("Upload failed. Please try again.");
+    } catch (err) {
+      setUploadErr(`Upload failed: ${err.message}`);
     }
     setUploading(false);
   };
@@ -55,37 +45,48 @@ export default function SingleFileSathi() {
     setInput("");
     setThinking(true);
     try {
-      const res  = await fetch(CHAT_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: text, s3_key: s3Key, action: "prompt" }),
-      });
-      const data = await res.json();
-      setMessages((prev) => [
-        ...prev,
-        { role: "bot", text: data.Response || data.response || "No response received.", uid: data.UID },
-      ]);
-    } catch {
-      setMessages((prev) => [...prev, { role: "bot", text: "Error contacting server. Please try again." }]);
+      const updatedHistory = [...history, { role: "user", content: text }];
+      const data = await queryDocuments(text, file?.name || "", updatedHistory);
+
+      let botMsg = { role: "bot", text: data.answer || "No response received.", rawData: data };
+
+      setHistory([...updatedHistory, { role: "assistant", content: data.answer || "" }]);
+      setMessages((prev) => [...prev, botMsg]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: "bot", text: `Error: ${err.message}` }]);
     }
     setThinking(false);
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   };
 
-  /* ── feedback ── */
-  const sendFeedback = async (index, like) => {
-    const uid = messages[index]?.uid;
-    if (!uid) return;
-    try {
-      await fetch(CHAT_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: "feedback", UID: uid, Like: like, Dislike: !like }),
-      });
-      setMessages((prev) =>
-        prev.map((m, i) => i === index ? { ...m, liked: like, disliked: !like } : m)
+  /* ── feedback — removed (Azure backend doesn't use UID feedback) ── */
+
+  const chatEndRef = useRef();
+  const renderBotMessage = (msg) => {
+    const data = msg.rawData;
+    if (!data) return <span>{msg.text}</span>;
+
+    if (data.type === "table" && data.rows?.length > 0) {
+      const cols = data.columns?.length ? data.columns : Object.keys(data.rows[0]);
+      return (
+        <div style={{ overflowX: "auto", fontSize: "13px" }}>
+          {data.answer && <p style={{ marginBottom: "6px" }}>{data.answer}</p>}
+          <table style={{ borderCollapse: "collapse", width: "100%" }}>
+            <thead>
+              <tr>{cols.map(c => <th key={c} style={{ padding: "6px 10px", background: "#f3f4f6", borderBottom: "2px solid #e5e7eb", textAlign: "left" }}>{c}</th>)}</tr>
+            </thead>
+            <tbody>
+              {data.rows.map((row, i) => (
+                <tr key={i} style={{ borderBottom: "1px solid #f0f0f0", background: i % 2 === 0 ? "#fff" : "#fafafa" }}>
+                  {cols.map(c => <td key={c} style={{ padding: "5px 10px" }}>{row[c] ?? ""}</td>)}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       );
-    } catch {}
+    }
+    return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || msg.text}</span>;
   };
 
   return (
@@ -98,33 +99,7 @@ export default function SingleFileSathi() {
           {messages.map((m, i) => (
             <div key={i} style={{ marginBottom: "16px" }}>
               {m.role === "bot" ? (
-                <div>
-                  <div style={s.botBubble}>{m.text}</div>
-                  {m.uid && (
-                    <div style={s.thumbRow}>
-                      <button
-                        style={{ ...s.thumbBtn, color: m.liked ? "#059669" : "#9ca3af" }}
-                        onClick={() => sendFeedback(i, true)}
-                        title="Helpful"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill={m.liked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
-                          <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
-                        </svg>
-                      </button>
-                      <button
-                        style={{ ...s.thumbBtn, color: m.disliked ? "#dc2626" : "#9ca3af" }}
-                        onClick={() => sendFeedback(i, false)}
-                        title="Not helpful"
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill={m.disliked ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2">
-                          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/>
-                          <path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <div style={s.botBubble}>{renderBotMessage(m)}</div>
               ) : (
                 <div style={s.userRow}>
                   <div style={s.userBubble}>{m.text}</div>
