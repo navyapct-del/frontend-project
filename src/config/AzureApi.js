@@ -38,14 +38,14 @@ export const listDocuments = async () => {
   if (!res.ok) throw new Error(`listDocuments failed: ${res.status}`);
   const data = await res.json();
   console.log("[AzureApi] /documents response:", data);
+  // Handle both plain array and { value: [...] } wrapper shapes
+  const rawArray = Array.isArray(data) ? data : (Array.isArray(data?.value) ? data.value : []);
   // Normalize: tags array → comma string, summary → description
-  const normalized = Array.isArray(data)
-    ? data.map(d => ({
-        ...d,
-        tags:        Array.isArray(d.tags) ? d.tags.join(", ") : (d.tags || ""),
-        description: d.summary || d.description || "",
-      }))
-    : data;
+  const normalized = rawArray.map(d => ({
+    ...d,
+    tags:        Array.isArray(d.tags) ? d.tags.join(", ") : (d.tags || ""),
+    description: d.summary || d.description || "",
+  }));
   return normalized;
 };
 
