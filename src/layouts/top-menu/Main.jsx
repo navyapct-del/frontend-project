@@ -50,24 +50,22 @@ function Main() {
       <header style={{
         display: "flex", alignItems: "center",
         background: "#0d3347",
-        padding: "0 24px", height: "64px",
+        padding: "0 16px", height: "auto", minHeight: "64px",
         boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
         position: "sticky", top: 0, zIndex: 100, gap: "8px",
+        flexWrap: "wrap",
       }}>
-        {/* Logo — embedded as base64, no import needed */}
-        <Link to="/top-menu/documentscontent" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", flexShrink: 0, marginRight: "16px" }}>
+        {/* Logo */}
+        <Link to="/top-menu/documentscontent" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", flexShrink: 0, marginRight: "8px", padding: "10px 0" }}>
           <img
               src={logoUrl}
               alt="CloudThat"
               style={{ height: "28px", width: "auto", objectFit: "contain", display: "block" }}
           />
-            
-          
-          
         </Link>
 
         {/* Nav */}
-        <nav style={{ display: "flex", alignItems: "center", gap: "4px", flex: 1 }}>
+        <nav style={{ display: "flex", alignItems: "center", gap: "2px", flex: 1, flexWrap: "wrap", padding: "6px 0" }}>
           {formattedMenu.map((menu, menuKey) => {
             const isActive = menu.active;
             return (
@@ -75,9 +73,9 @@ function Main() {
                 key={menuKey}
                 href={menu.subMenu ? "#" : menu.pathname}
                 style={{
-                  display: "flex", alignItems: "center", gap: "7px",
-                  padding: "8px 14px", borderRadius: "6px",
-                  fontSize: "13px", fontWeight: "500",
+                  display: "flex", alignItems: "center", gap: "6px",
+                  padding: "6px 10px", borderRadius: "6px",
+                  fontSize: "12px", fontWeight: "500",
                   color: isActive ? "#7ec8e3" : "rgba(255,255,255,0.65)",
                   background: isActive ? "rgba(126,200,227,0.15)" : "transparent",
                   borderBottom: isActive ? "2px solid #7ec8e3" : "2px solid transparent",
@@ -96,9 +94,10 @@ function Main() {
         {/* User */}
         <Dropdown>
           <DropdownToggle tag="div" role="button" style={{
-            display: "flex", alignItems: "center", gap: "10px",
+            display: "flex", alignItems: "center", gap: "8px",
             background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "8px", padding: "6px 12px 6px 6px", cursor: "pointer",
+            borderRadius: "8px", padding: "6px 10px 6px 6px", cursor: "pointer",
+            margin: "6px 0",
           }}>
             <div style={{
               width: "32px", height: "32px", borderRadius: "6px",
@@ -112,7 +111,7 @@ function Main() {
               <span style={{ fontSize: "12px", fontWeight: "600", color: "#fff" }}>
                 {sessionDetails?.["custom:Full_Name"] || "User"}
               </span>
-              <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.45)", maxWidth: "160px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.45)", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {sessionDetails?.["email"] || ""}
               </span>
             </div>
@@ -133,7 +132,7 @@ function Main() {
         </Dropdown>
       </header>
 
-      <main style={{ padding: "28px", maxWidth: "1400px", margin: "0 auto" }}>
+      <main style={{ padding: "16px", maxWidth: "1400px", margin: "0 auto" }}>
         <Outlet />
       </main>
     </div>
