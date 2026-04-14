@@ -96,6 +96,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
           try {
             const parsed = JSON.parse(xhr.responseText);
             if (parsed.error) errMsg = parsed.error;
+            if (parsed.duplicate) errMsg = parsed.error; // friendly duplicate message
           } catch {}
           reject(new Error(errMsg));
         }

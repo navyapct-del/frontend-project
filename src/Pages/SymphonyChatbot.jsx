@@ -393,7 +393,7 @@ const SymphonyChatbot = () => {
               <button type="button" onClick={cancelEdit} style={sc.cancelEditBtn}>Cancel</button>
             </div>
           )}
-          <div style={sc.inputRow}>
+          <div style={sc.inputRow} className="chat-input-row">
             <input
               type="text"
               value={inputValue}
@@ -482,6 +482,16 @@ const SymphonyChatbot = () => {
         @media (min-width: 768px) {
           .sc-bot-bubble { max-width: 70% !important; }
           .sc-user-bubble { max-width: 70% !important; }
+        }
+        /* Responsive input bar */
+        @media (max-width: 600px) {
+          .chat-input-row { flex-wrap: wrap !important; }
+          .chat-input-row input { min-width: 100% !important; order: 1; }
+          .chat-input-row button { flex: 1 !important; min-width: 0 !important; }
+        }
+        /* Responsive bot row */
+        @media (max-width: 600px) {
+          .sc-bot-row { max-width: 95% !important; }
         }
       `}</style>
     </div>
