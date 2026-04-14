@@ -6,8 +6,17 @@
  */
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
+const FUNCTION_KEY   = import.meta.env.VITE_AZURE_FUNCTION_KEY || "";
 
 console.log("[AzureApi] Base URL:", AZURE_BASE_URL);
+console.log("[AzureApi] Function key configured:", FUNCTION_KEY ? "yes" : "no (anonymous mode)");
+
+// Append ?code= to URL if a function key is configured
+function withKey(url) {
+  if (!FUNCTION_KEY) return url;
+  const sep = url.includes("?") ? "&" : "?";
+  return `${url}${sep}code=${FUNCTION_KEY}`;
+}
 
 // ─────────────────────────────────────────────
 // Health
@@ -15,7 +24,7 @@ console.log("[AzureApi] Base URL:", AZURE_BASE_URL);
 
 export const checkHealth = async () => {
   console.log("[AzureApi] GET /health");
-  const res = await fetch(`${AZURE_BASE_URL}/health`);
+  const res = await fetch(withKey(`${AZURE_BASE_URL}/health`));
   return res.json();
 };
 
@@ -25,7 +34,7 @@ export const checkHealth = async () => {
 
 export const listDocuments = async () => {
   console.log("[AzureApi] GET /documents →", `${AZURE_BASE_URL}/documents`);
-  const res = await fetch(`${AZURE_BASE_URL}/documents`);
+  const res = await fetch(withKey(`${AZURE_BASE_URL}/documents`));
   if (!res.ok) throw new Error(`listDocuments failed: ${res.status}`);
   const data = await res.json();
   console.log("[AzureApi] /documents response:", data);
@@ -68,7 +77,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
   if (onProgress) {
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open("POST", `${AZURE_BASE_URL}/upload`);
+      xhr.open("POST", withKey(`${AZURE_BASE_URL}/upload`));
 
       // Append extra fields to formData before sending
       Object.entries(extraFields).forEach(([k, v]) => {
@@ -97,7 +106,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
     });
   }
 
-  const res = await fetch(`${AZURE_BASE_URL}/upload`, {
+  const res = await fetch(withKey(`${AZURE_BASE_URL}/upload`), {
     method: "POST",
     body: formData,
   });
@@ -120,7 +129,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
  */
 export const deleteDocument = async (documentId) => {
   console.log("[AzureApi] DELETE /document/", documentId);
-  const res = await fetch(`${AZURE_BASE_URL}/document/${documentId}`, {
+  const res = await fetch(withKey(`${AZURE_BASE_URL}/document/${documentId}`), {
     method: "DELETE",
   });
   if (!res.ok && res.status !== 404) {
@@ -158,7 +167,7 @@ const detectChartIntent = (question) =>
 
 export const queryDocuments = async (question, filenameFilter = "", history = []) => {
   console.log("[AzureApi] POST /query →", question);
-  const res = await fetch(`${AZURE_BASE_URL}/query`, {
+  const res = await fetch(withKey(`${AZURE_BASE_URL}/query`), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -171,6 +180,29 @@ export const queryDocuments = async (question, filenameFilter = "", history = []
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.error || `Query failed: ${res.status}`);
+  }
+  return res.json();
+};
+
+// ─────────────────────────────────────────────
+// Cleanup session (temp blobs for Files Knowledge Bot)
+// ─────────────────────────────────────────────
+
+/**
+ * Delete all temp blobs and entities for a session.
+ * Called when user clicks "Clear Chat" in Files Knowledge Bot.
+ * @param {string} sessionId
+ */
+export const cleanupSession = async (sessionId) => {
+  console.log("[AzureApi] POST /cleanup-session →", sessionId);
+  const res = await fetch(withKey(`${AZURE_BASE_URL}/cleanup-session`), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ session_id: sessionId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Cleanup failed: ${res.status}`);
   }
   return res.json();
 };
