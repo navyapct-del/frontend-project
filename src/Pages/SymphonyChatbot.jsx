@@ -158,6 +158,33 @@ const sc = {
   },
 };
 
+// ── Normalize backend response ───────────────────────────────────────────────
+// If backend returns { type: "text", answer: "{...json...}" }, unwrap the JSON
+function normalizeResponse(data) {
+  if (!data || typeof data !== "object") return data;
+
+  // If answer field is a JSON string containing a structured response, unwrap it
+  if (typeof data.answer === "string") {
+    const trimmed = data.answer.trim();
+    // Find first { in the string (handles leading whitespace/text)
+    const jsonIdx = trimmed.indexOf("{");
+    if (jsonIdx !== -1) {
+      try {
+        const inner = JSON.parse(trimmed.slice(jsonIdx));
+        if (inner && inner.type && inner.type !== "text") {
+          console.log("[normalizeResponse] unwrapped JSON from answer field, type:", inner.type);
+          return inner;
+        }
+        // Even if type is "text", if it has rows/columns/labels/values, use it
+        if (inner && (inner.rows || inner.columns || inner.labels || inner.values || inner.data)) {
+          return inner;
+        }
+      } catch {}
+    }
+  }
+  return data;
+}
+
 // ── Main chatbot ─────────────────────────────────────────────────────────────
 const SymphonyChatbot = () => {
   const genId = () => `id-${Math.random().toString(36).substr(2, 9)}`;
@@ -247,8 +274,12 @@ const SymphonyChatbot = () => {
     const updatedHistory = [...chatHistory, { role: "user", content: resolvedQuery }];
 
     try {
-      const data = await queryDocuments(resolvedQuery, "", updatedHistory);
-      console.log("[SymphonyChatbot] response type:", data.type, data);
+      const raw = await queryDocuments(resolvedQuery, "", updatedHistory);
+      console.log("[SymphonyChatbot] response type:", raw.type, raw);
+
+      // Normalize: if backend returns type:"text" but answer is a JSON string, unwrap it
+      const data = normalizeResponse(raw);
+      console.log("[SymphonyChatbot] normalized type:", data.type);
 
       if (data.title && data.title !== "Answer" && data.title !== "Not Found") {
         setLastTopic(data.title);

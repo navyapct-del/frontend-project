@@ -38,6 +38,24 @@ const WELCOME_MSG = {
   rawData: null,
 };
 
+// ── Normalize backend response ───────────────────────────────────────────────
+function normalizeResponse(data) {
+  if (!data || typeof data !== "object") return data;
+  if (typeof data.answer === "string") {
+    const trimmed = data.answer.trim();
+    const jsonIdx = trimmed.indexOf("{");
+    if (jsonIdx !== -1) {
+      try {
+        const inner = JSON.parse(trimmed.slice(jsonIdx));
+        if (inner && (inner.type !== "text" || inner.rows || inner.columns || inner.labels || inner.values || inner.data)) {
+          return inner;
+        }
+      } catch {}
+    }
+  }
+  return data;
+}
+
 export default function SingleFileSathi() {
   // ── File state ──────────────────────────────────────────────────────────────
   const [file, setFile]                   = useState(null);
@@ -166,7 +184,8 @@ export default function SingleFileSathi() {
 
     try {
       const updatedHistory = [...history, { role: "user", content: text }];
-      const data = await queryDocuments(text, file?.name || "", updatedHistory);
+      const raw = await queryDocuments(text, file?.name || "", updatedHistory);
+      const data = normalizeResponse(raw);
 
       const botMsg = {
         id: `b-${Date.now()}`,
