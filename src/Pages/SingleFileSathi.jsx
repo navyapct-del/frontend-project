@@ -11,7 +11,7 @@
  *  - Responsive max-width bubbles
  */
 import React, { useState, useRef, useEffect } from "react";
-import { uploadDocument, queryDocuments, deleteDocument } from "../config/AzureApi";
+import { uploadDocument, queryDocuments, deleteDocument, cleanupSession } from "../config/AzureApi";
 import { validateFileType } from "../utils/fileValidation";
 import { BotMessage } from "../Data-Orch-Components/ChatComponents/BotMessage";
 import { ProgressBar } from "../Data-Orch-Components/UploadComponent/ProgressBar";
@@ -190,30 +190,14 @@ export default function SingleFileSathi() {
     setThinking(false);
   };
 
-  // ── Clear chat (with temp blob cleanup) ────────────────────────────────────
+  // ── Clear chat (with temp blob cleanup via session) ────────────────────────
   const clearChat = async () => {
-    if (tempDocId) {
-      try {
-        await deleteDocument(tempDocId);
-      } catch (err) {
-        // Show error but still reset UI
-        setMessages([
-          WELCOME_MSG,
-          {
-            id: `del-err-${Date.now()}`,
-            role: "bot",
-            text: "Failed to delete uploaded file. Please try again.",
-            rawData: null,
-            isError: true,
-          },
-        ]);
-        setFile(null);
-        setFileReady(false);
-        setTempDocId(null);
-        setUploadProgress(0);
-        setHistory([]);
-        return;
-      }
+    try {
+      // Use cleanupSession to delete all temp blobs for this session at once
+      await cleanupSession(sessionId);
+    } catch (err) {
+      console.warn("[SingleFileSathi] cleanupSession failed:", err.message);
+      // Still reset UI even if cleanup fails
     }
     setMessages([WELCOME_MSG]);
     setFile(null);
