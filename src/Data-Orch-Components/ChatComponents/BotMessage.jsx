@@ -75,14 +75,11 @@ function tableToChart(columns, rows, question) {
 }
 
 export function BotMessage({ msg }) {
-  // Normalize: extract rawData from text if it's a JSON string
   let resolvedMsg = msg;
 
-  // Helper: try to parse a string as structured JSON response
   const tryParseJSON = (str) => {
     if (!str || typeof str !== "string") return null;
     const trimmed = str.trim();
-    // Find first { or [ — model sometimes adds text before JSON
     const jsonStart = Math.min(
       trimmed.indexOf("{") === -1 ? Infinity : trimmed.indexOf("{"),
       trimmed.indexOf("[") === -1 ? Infinity : trimmed.indexOf("[")
@@ -95,7 +92,6 @@ export function BotMessage({ msg }) {
     return null;
   };
 
-  // If msg.text is a JSON string with no rawData, parse it
   if (typeof msg.text === "string" && !msg.rawData) {
     const parsed = tryParseJSON(msg.text);
     if (parsed) {
@@ -105,21 +101,15 @@ export function BotMessage({ msg }) {
 
   const { text, rawData, originalQuery } = resolvedMsg;
 
-  // If rawData.answer is itself a JSON string, unwrap it
   let data = rawData;
   if (data && typeof data.answer === "string") {
     const inner = tryParseJSON(data.answer);
-    if (inner) {
-      data = inner;
-    }
+    if (inner) data = inner;
   }
 
-  // If data.type is "text" but answer looks like JSON, try to unwrap
   if (data && data.type === "text" && typeof data.answer === "string") {
     const inner = tryParseJSON(data.answer);
-    if (inner) {
-      data = inner;
-    }
+    if (inner) data = inner;
   }
 
   if (!data) {

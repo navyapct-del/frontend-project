@@ -5,36 +5,17 @@
  */
 
 export const ALLOWED_MIME = new Set([
-  // Images
-  "image/jpeg",
-  "image/png",
-  "image/gif",
-  "image/svg+xml",
-  "image/webp",
-  // Documents
+  "image/jpeg", "image/png", "image/gif", "image/svg+xml", "image/webp",
   "application/pdf",
-  // CSV — browsers report different MIME types for CSV
-  "text/csv",
-  "application/csv",
-  "text/plain",
-  "application/vnd.ms-excel",
-  // Excel
+  "text/csv", "application/csv", "text/plain", "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  "application/vnd.ms-excel",
-  // Word
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  // Text
-  "text/plain",
 ]);
 
 export const ALLOWED_EXT = new Set([
   "jpg", "jpeg", "png", "gif", "svg", "webp",
-  "pdf",
-  "csv",
-  "xls", "xlsx",
-  "doc", "docx",
-  "txt",
+  "pdf", "csv", "xls", "xlsx", "doc", "docx", "txt",
 ]);
 
 /**
@@ -45,6 +26,5 @@ export const ALLOWED_EXT = new Set([
 export function validateFileType(file) {
   if (!file) return false;
   const ext = file.name.split(".").pop().toLowerCase();
-  // Always allow by extension — MIME types are unreliable across browsers/OS
   return ALLOWED_EXT.has(ext) || ALLOWED_MIME.has(file.type);
 }

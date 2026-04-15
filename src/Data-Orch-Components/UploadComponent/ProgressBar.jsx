@@ -27,47 +27,13 @@ export function ProgressBar({ percent = 0, filename = "", fileSize = 0 }) {
 }
 
 const s = {
-  wrap: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-    padding: "8px 0",
-  },
-  meta: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    fontSize: "12px",
-    color: "#374151",
-  },
-  filename: {
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
-    maxWidth: "70%",
-    fontWeight: 500,
-  },
-  size: {
-    color: "#6b7280",
-    flexShrink: 0,
-  },
-  track: {
-    height: "8px",
-    background: "#e5e7eb",
-    borderRadius: "4px",
-    overflow: "hidden",
-  },
-  fill: {
-    height: "100%",
-    background: "#0d3347",
-    borderRadius: "4px",
-    transition: "width 0.2s ease",
-  },
-  label: {
-    fontSize: "11px",
-    color: "#6b7280",
-    textAlign: "right",
-  },
+  wrap: { display: "flex", flexDirection: "column", gap: "4px", padding: "8px 0" },
+  meta: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: "12px", color: "#374151" },
+  filename: { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%", fontWeight: 500 },
+  size: { color: "#6b7280", flexShrink: 0 },
+  track: { height: "8px", background: "#e5e7eb", borderRadius: "4px", overflow: "hidden" },
+  fill: { height: "100%", background: "#0d3347", borderRadius: "4px", transition: "width 0.2s ease" },
+  label: { fontSize: "11px", color: "#6b7280", textAlign: "right" },
 };
 
 export default ProgressBar;

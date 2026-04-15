@@ -76,7 +76,6 @@ export function ChartRenderer({ data }) {
     );
   }
 
-  // Fallback
   return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || "No chart data available."}</span>;
 }
 
