@@ -120,6 +120,25 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 };
 
 // ─────────────────────────────────────────────
+// Download — generate SAS URL for private blob
+// ─────────────────────────────────────────────
+
+/**
+ * Get a time-limited SAS download URL for a document.
+ * @param {string} documentId
+ * @returns {{ sas_url: string, filename: string }}
+ */
+export const downloadDocument = async (documentId) => {
+  console.log("[AzureApi] GET /download/", documentId);
+  const res = await fetch(withKey(`${AZURE_BASE_URL}/download/${documentId}`));
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Download failed: ${res.status}`);
+  }
+  return res.json();
+};
+
+// ─────────────────────────────────────────────
 // Delete
 // ─────────────────────────────────────────────
 

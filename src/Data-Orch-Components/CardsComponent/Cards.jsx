@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { downloadDocument } from "../../config/AzureApi";
 import pdf_Url    from "../../assets/images/pdf.png";
 import docx_Url   from "../../assets/images/docx.png";
 import text_Url   from "../../assets/images/text.png";
@@ -103,14 +104,37 @@ const truncate = (str, n = 16) =>
 
 const Cards = (props) => {
   const [showDetail, setShowDetail] = useState(false);
+  const [downloading, setDownloading] = useState(false);
 
   const filename   = props.name   || "Unknown file";
   const blobUrl    = props.blobUrl || "";
+  const docId      = props.docId  || "";
   const ext        = getExt(filename);
   const shortName  = truncate(filename.split("/").pop(), 16);
   const dateStr    = formatDate(props.objdate);
   const tags       = (props.tags || "").replace(/[{}'[\]]/g, "");
   const desc       = props.description || "";
+
+  const handleDownload = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!docId) return;
+    setDownloading(true);
+    try {
+      const { sas_url, filename: fname } = await downloadDocument(docId);
+      // Trigger browser download
+      const a = document.createElement("a");
+      a.href = sas_url;
+      a.download = fname || filename;
+      a.target = "_blank";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } catch (err) {
+      alert(`Download failed: ${err.message}`);
+    }
+    setDownloading(false);
+  };
 
   return (
     <>
@@ -152,15 +176,14 @@ const Cards = (props) => {
             {tags       && <p style={s.meta}><b>Tags:</b> {tags}</p>}
             {props.size && <p style={s.meta}><b>Size:</b> {props.size}</p>}
 
-            {blobUrl && (
-              <a
-                href={blobUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+            {docId && (
+              <button
+                onClick={handleDownload}
+                disabled={downloading}
                 style={s.openBtn}
               >
-                Open / Download
-              </a>
+                {downloading ? "Downloading…" : "Download"}
+              </button>
             )}
           </div>
         </div>

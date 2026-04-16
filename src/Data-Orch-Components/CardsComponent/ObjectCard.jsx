@@ -134,6 +134,7 @@ export default function ObjectCard({
                 objdate={date[index]}
                 currentloc={currentloc}
                 blobUrl={blobUrls[index] || ""}
+                docId={docId || ""}
               />
             </div>
           );
