@@ -11,7 +11,7 @@
  *  - Responsive max-width bubbles
  */
 import React, { useState, useRef, useEffect } from "react";
-import { uploadDocument, queryDocuments, deleteDocument, cleanupSession } from "../config/AzureApi";
+import { uploadDocument, queryDocuments, deleteDocument, cleanupSession, listDocuments } from "../config/AzureApi";
 import { validateFileType } from "../utils/fileValidation";
 import { BotMessage } from "../Data-Orch-Components/ChatComponents/BotMessage";
 import { ProgressBar } from "../Data-Orch-Components/UploadComponent/ProgressBar";
@@ -78,8 +78,22 @@ export default function SingleFileSathi() {
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText]         = useState("");
 
+  // ── Documents list (from API) ────────────────────────────────────────────────
+  const [docList, setDocList]           = useState([]);
+  const [selectedDocs, setSelectedDocs] = useState(new Set());
+
   const fileRef    = useRef();
   const chatEndRef = useRef();
+
+  // Fetch document list on mount
+  useEffect(() => {
+    listDocuments()
+      .then(docs => {
+        const arr = Array.isArray(docs) ? docs : (Array.isArray(docs?.value) ? docs.value : []);
+        setDocList(arr);
+      })
+      .catch(() => {});
+  }, []);
 
   const setMessages = (msgs) => {
     saveSfsMessages(msgs);
@@ -258,6 +272,45 @@ export default function SingleFileSathi() {
 
   return (
     <div style={s.page}>
+      {/* ── Documents sidebar ── */}
+      <div style={s.sidebar}>
+        <div style={s.sidebarHeader}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style={s.sidebarTitle}>Documents</span>
+        </div>
+        <div style={s.sidebarList}>
+          {docList.length === 0 ? (
+            <p style={{ fontSize: "12px", color: "#9ca3af", padding: "12px", textAlign: "center" }}>No documents uploaded yet</p>
+          ) : (
+            docList.map((doc, i) => {
+              const name = doc.filename || doc.name || `Document ${i + 1}`;
+              const id   = doc.id || i;
+              const checked = selectedDocs.has(id);
+              return (
+                <label key={id} style={s.docItem}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => {
+                      setSelectedDocs(prev => {
+                        const next = new Set(prev);
+                        if (next.has(id)) next.delete(id); else next.add(id);
+                        return next;
+                      });
+                    }}
+                    style={s.checkbox}
+                  />
+                  <span style={s.docName} title={name}>{name}</span>
+                </label>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* ── Chat card ── */}
       <div style={s.chatCard}>
 
         {/* ── Messages area ── */}
@@ -440,8 +493,64 @@ const s = {
     fontFamily: "'Segoe UI', system-ui, sans-serif",
     height: "calc(100vh - 120px)",
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "row",
+    gap: "16px",
   },
+
+  /* ── Documents sidebar ── */
+  sidebar: {
+    width: "220px",
+    flexShrink: 0,
+    background: "#f0f7fa",
+    borderRadius: "14px",
+    border: "1.5px solid #bee3f8",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  sidebarHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "14px 16px",
+    borderBottom: "1px solid #bee3f8",
+    background: "#e0f2fe",
+  },
+  sidebarTitle: {
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "#0d3347",
+  },
+  sidebarList: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "8px 0",
+  },
+  docItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "9px 14px",
+    cursor: "pointer",
+    transition: "background 0.1s",
+    borderBottom: "1px solid #e0f2fe",
+  },
+  checkbox: {
+    width: "16px",
+    height: "16px",
+    flexShrink: 0,
+    accentColor: "#0d3347",
+    cursor: "pointer",
+  },
+  docName: {
+    fontSize: "12px",
+    color: "#1f2937",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    flex: 1,
+  },
+
   chatCard: {
     flex: 1,
     background: "#ffffff",
