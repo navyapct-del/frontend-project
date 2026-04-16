@@ -12,7 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar, Line, Pie } from "react-chartjs-2";
-import { queryDocuments } from "../config/AzureApi";
+import { queryDocuments, listDocuments } from "../config/AzureApi";
 import { useChatStore } from "../stores/chatStore";
 import { ChartRenderer } from "../Data-Orch-Components/ChatComponents/ChartRenderer";
 import { ResultTable } from "../Data-Orch-Components/ChatComponents/ResultTable";
@@ -35,8 +35,57 @@ const sc = {
     fontFamily: "'Segoe UI', system-ui, sans-serif",
     height: "calc(100vh - 120px)",
     display: "flex",
-    flexDirection: "column",
+    flexDirection: "row",
+    gap: "16px",
   },
+
+  /* Documents sidebar */
+  sidebar: {
+    width: "220px",
+    flexShrink: 0,
+    background: "#f0f7fa",
+    borderRadius: "14px",
+    border: "1.5px solid #bee3f8",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+  },
+  sidebarHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "14px 16px",
+    borderBottom: "1px solid #bee3f8",
+    background: "#e0f2fe",
+  },
+  sidebarTitle: {
+    fontSize: "14px",
+    fontWeight: "700",
+    color: "#0d3347",
+  },
+  sidebarList: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "8px 0",
+  },
+  docItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    padding: "9px 14px",
+    cursor: "pointer",
+    transition: "background 0.1s",
+    borderBottom: "1px solid #e0f2fe",
+    userSelect: "none",
+  },
+  docName: {
+    fontSize: "12px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    flex: 1,
+  },
+
   chatCard: {
     flex: 1,
     background: "#ffffff",
@@ -209,11 +258,23 @@ const SymphonyChatbot = () => {
   const [isListening, setIsListening]   = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText]         = useState("");
+  const [docList, setDocList]           = useState([]);
+  const [selectedDoc, setSelectedDoc]   = useState(""); // filename filter
   const [voiceSupported]                = useState(
     () => "webkitSpeechRecognition" in window || "SpeechRecognition" in window
   );
   const recognitionRef = useRef(null);
   const chatEndRef     = useRef(null);
+
+  // Fetch document list on mount
+  useEffect(() => {
+    listDocuments()
+      .then(docs => {
+        const arr = Array.isArray(docs) ? docs : (Array.isArray(docs?.value) ? docs.value : []);
+        setDocList(arr);
+      })
+      .catch(() => {});
+  }, []);
 
   const startListening = () => {
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -274,7 +335,7 @@ const SymphonyChatbot = () => {
     const updatedHistory = [...chatHistory, { role: "user", content: resolvedQuery }];
 
     try {
-      const raw = await queryDocuments(resolvedQuery, "", updatedHistory);
+      const raw = await queryDocuments(resolvedQuery, selectedDoc, updatedHistory);
       console.log("[SymphonyChatbot] response type:", raw.type, raw);
 
       // Normalize: if backend returns type:"text" but answer is a JSON string, unwrap it
@@ -331,6 +392,61 @@ const SymphonyChatbot = () => {
 
   return (
     <div style={sc.page}>
+      {/* ── Documents sidebar ── */}
+      <div style={sc.sidebar}>
+        <div style={sc.sidebarHeader}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style={sc.sidebarTitle}>Documents</span>
+        </div>
+        <div style={sc.sidebarList}>
+          {/* All documents option */}
+          <div
+            style={{
+              ...sc.docItem,
+              background: selectedDoc === "" ? "#dbeafe" : "transparent",
+              fontWeight: selectedDoc === "" ? "600" : "400",
+            }}
+            onClick={() => setSelectedDoc("")}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={selectedDoc === "" ? "#0d3347" : "#9ca3af"} strokeWidth="2">
+              <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/>
+            </svg>
+            <span style={{ ...sc.docName, color: selectedDoc === "" ? "#0d3347" : "#6b7280" }}>All Documents</span>
+          </div>
+
+          {docList.length === 0 ? (
+            <p style={{ fontSize: "12px", color: "#9ca3af", padding: "12px", textAlign: "center" }}>No documents yet</p>
+          ) : (
+            docList.map((doc, i) => {
+              const name    = doc.filename || doc.name || `Document ${i + 1}`;
+              const isActive = selectedDoc === name;
+              return (
+                <div
+                  key={doc.id || i}
+                  style={{
+                    ...sc.docItem,
+                    background: isActive ? "#dbeafe" : "transparent",
+                  }}
+                  onClick={() => setSelectedDoc(isActive ? "" : name)}
+                  title={name}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={isActive ? "#0d3347" : "#9ca3af"} strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span style={{ ...sc.docName, color: isActive ? "#0d3347" : "#374151", fontWeight: isActive ? "600" : "400" }}>
+                    {name}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* ── Chat card ── */}
       <div style={sc.chatCard}>
         {/* Messages area */}
         <div style={sc.messages}>
@@ -398,7 +514,7 @@ const SymphonyChatbot = () => {
               type="text"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="Ask about your documents…"
+              placeholder={selectedDoc ? `Ask about "${selectedDoc}"…` : "Ask about your documents…"}
               style={{
                 ...sc.input,
                 borderColor: editingIndex !== null ? "#c0605a" : "#e5e7eb",
