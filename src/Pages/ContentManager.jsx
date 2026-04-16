@@ -29,6 +29,7 @@ export default function ContentManager(props) {
   const [isCheckboxFilterActive, setIsCheckboxFilterActive] = useState(false);
   const [showTabulator, setShowTabulator] = useState(false);
   const [viewMode, setViewMode]           = useState("grid"); // "grid" | "list"
+  const [sidebarDoc, setSidebarDoc]       = useState(""); // selected doc name for sidebar filter
 
   const loadDocuments = useCallback(() => {
     setLoading(true);
@@ -125,7 +126,68 @@ export default function ContentManager(props) {
   }[props.type] || "";
 
   return (
-    <div style={s.page}>
+    <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
+
+      {/* ── Documents sidebar ── */}
+      <div style={sd.sidebar}>
+        <div style={sd.sidebarHeader}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span style={sd.sidebarTitle}>Documents</span>
+        </div>
+        <div style={sd.sidebarList}>
+          {/* All */}
+          <div
+            style={{ ...sd.docItem, background: sidebarDoc === "" ? "#dbeafe" : "transparent" }}
+            onClick={() => { setSidebarDoc(""); setFilteredData(allData); }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sidebarDoc === "" ? "#0d3347" : "#9ca3af"} strokeWidth="2">
+              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            </svg>
+            <span style={{ ...sd.docName, color: sidebarDoc === "" ? "#0d3347" : "#6b7280", fontWeight: sidebarDoc === "" ? "600" : "400" }}>
+              All Documents
+            </span>
+          </div>
+
+          {allData.length === 0 ? (
+            <p style={{ fontSize: "11px", color: "#9ca3af", padding: "10px 14px", textAlign: "center" }}>No files yet</p>
+          ) : (
+            allData.map((doc) => {
+              const isActive = sidebarDoc === doc.name;
+              return (
+                <div
+                  key={doc.id}
+                  style={{ ...sd.docItem, background: isActive ? "#dbeafe" : "transparent" }}
+                  title={doc.name}
+                  onClick={() => {
+                    if (isActive) {
+                      setSidebarDoc("");
+                      setFilteredData(allData);
+                    } else {
+                      setSidebarDoc(doc.name);
+                      setFilteredData(allData.filter(d => d.name === doc.name));
+                    }
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={isActive ? "#0d3347" : "#9ca3af"} strokeWidth="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span style={{ ...sd.docName, color: isActive ? "#0d3347" : "#374151", fontWeight: isActive ? "600" : "400" }}>
+                    {doc.name}
+                  </span>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+
+      {/* ── Main content ── */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={s.page}>
       <div style={s.card}>
 
         {/* ── TOOLBAR ── */}
@@ -310,9 +372,62 @@ export default function ContentManager(props) {
         </div>
 
       </div>
-    </div>
+      </div> {/* end main content */}
+    </div> {/* end outer row */}
   );
 }
+
+// ── Sidebar styles ────────────────────────────────────────────────────────────
+const sd = {
+  sidebar: {
+    width: "200px",
+    flexShrink: 0,
+    background: "#f0f7fa",
+    borderRadius: "14px",
+    border: "1.5px solid #bee3f8",
+    display: "flex",
+    flexDirection: "column",
+    overflow: "hidden",
+    alignSelf: "flex-start",
+    position: "sticky",
+    top: "16px",
+    maxHeight: "calc(100vh - 140px)",
+  },
+  sidebarHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "12px 14px",
+    borderBottom: "1px solid #bee3f8",
+    background: "#e0f2fe",
+  },
+  sidebarTitle: {
+    fontSize: "13px",
+    fontWeight: "700",
+    color: "#0d3347",
+  },
+  sidebarList: {
+    flex: 1,
+    overflowY: "auto",
+    padding: "6px 0",
+  },
+  docItem: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    padding: "8px 12px",
+    cursor: "pointer",
+    transition: "background 0.1s",
+    borderBottom: "1px solid #e0f2fe",
+  },
+  docName: {
+    fontSize: "11px",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    flex: 1,
+  },
+};
 
 const s = {
   page: { fontFamily: "'Segoe UI', system-ui, sans-serif", padding: "0" },
