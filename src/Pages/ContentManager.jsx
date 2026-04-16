@@ -187,7 +187,6 @@ export default function ContentManager(props) {
 
       {/* ── Main content ── */}
       <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={s.page}>
       <div style={s.card}>
 
         {/* ── TOOLBAR ── */}
@@ -371,7 +370,7 @@ export default function ContentManager(props) {
           )}
         </div>
 
-      </div>
+      </div> {/* end s.card */}
       </div> {/* end main content */}
     </div> {/* end outer row */}
   );
