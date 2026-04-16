@@ -271,36 +271,42 @@ export default function ContentManager(props) {
                   <table style={s.listTable}>
                     <thead>
                       <tr style={s.listHead}>
-                        <th style={s.th}>Name</th>
-                        <th style={s.th}>Description</th>
-                        <th style={s.th}>Tags</th>
-                        <th style={s.th}>Date</th>
-                        <th style={s.th}>Actions</th>
+                        <th style={{ ...s.th, width: "35%" }}>Name</th>
+                        <th style={{ ...s.th, width: "30%" }}>Description</th>
+                        <th style={{ ...s.th, width: "20%" }}>Tags</th>
+                        <th style={{ ...s.th, width: "10%" }}>Date</th>
+                        <th style={{ ...s.th, width: "5%" }}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {currentData.map((item, i) => (
                         <tr key={item.id} style={{ ...s.listRow, background: i % 2 === 0 ? "#fff" : "#f8f9fb" }}>
-                          <td style={s.td}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2">
+                          <td style={{ ...s.td, maxWidth: "0", width: "35%" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" style={{ flexShrink: 0 }}>
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                               </svg>
-                              <span style={{ fontWeight: 500, fontSize: "13px", color: "#1f2937" }}>{item.name}</span>
+                              <span style={{ fontWeight: 500, fontSize: "13px", color: "#1f2937", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.name}>
+                                {item.name}
+                              </span>
                             </div>
                           </td>
-                          <td style={{ ...s.td, color: "#6b7280", fontSize: "12px", maxWidth: "200px" }}>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "block" }}>
+                          <td style={{ ...s.td, maxWidth: "0", width: "30%" }}>
+                            <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "12px", color: "#6b7280" }} title={item.description}>
                               {item.description || "—"}
                             </span>
                           </td>
-                          <td style={{ ...s.td, fontSize: "12px", color: "#6b7280" }}>{item.tags || "—"}</td>
-                          <td style={{ ...s.td, fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap" }}>
+                          <td style={{ ...s.td, maxWidth: "0", width: "20%" }}>
+                            <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "12px", color: "#6b7280" }} title={item.tags}>
+                              {item.tags || "—"}
+                            </span>
+                          </td>
+                          <td style={{ ...s.td, fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap", width: "10%" }}>
                             {item.date ? new Date(item.date).toLocaleDateString() : "—"}
                           </td>
-                          <td style={s.td}>
-                            <div style={{ display: "flex", gap: "8px" }}>
+                          <td style={{ ...s.td, width: "5%" }}>
+                            <div style={{ display: "flex", gap: "6px" }}>
                               {item.id && (
                                 <a
                                   href={`${import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api"}/file?id=${item.id}${import.meta.env.VITE_AZURE_FUNCTION_KEY ? "&code=" + import.meta.env.VITE_AZURE_FUNCTION_KEY : ""}`}
@@ -310,14 +316,14 @@ export default function ContentManager(props) {
                                   title="Download"
                                   download
                                 >
-                                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                     <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
                                   </svg>
                                 </a>
                               )}
                               <button onClick={() => handleDelete(item.id)} style={{ ...s.actionBtn, color: "#dc2626" }} title="Delete">
-                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                   <polyline points="3 6 5 6 21 6"/>
                                   <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
                                 </svg>
@@ -468,11 +474,11 @@ const s = {
   content: { flex: 1, padding: "24px 28px", background: "#f8f9fb" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "16px" },
   listWrap: { overflowX: "auto" },
-  listTable: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
-  listHead: { background: "#f3f4f6" },
-  th: { padding: "10px 14px", textAlign: "left", fontWeight: "600", color: "#374151", borderBottom: "2px solid #e5e7eb", whiteSpace: "nowrap" },
+  listTable: { width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" },
+  listHead: { background: "#0d3347" },
+  th: { padding: "10px 12px", textAlign: "left", fontWeight: "600", color: "#ffffff", borderBottom: "2px solid #0a2535", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
   listRow: { borderBottom: "1px solid #f0f0f0", transition: "background 0.1s" },
-  td: { padding: "10px 14px", verticalAlign: "middle" },
+  td: { padding: "8px 12px", verticalAlign: "middle", height: "44px" },
   actionBtn: {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     width: "28px", height: "28px", borderRadius: "6px", border: "1px solid #e5e7eb",
