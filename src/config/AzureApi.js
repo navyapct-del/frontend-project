@@ -120,22 +120,20 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 };
 
 // ─────────────────────────────────────────────
-// Download — generate SAS URL for private blob
+// Download — get file via proxy endpoint
 // ─────────────────────────────────────────────
 
 /**
- * Get a time-limited SAS download URL for a document.
+ * Get the download URL for a document (proxied through the Function App).
  * @param {string} documentId
- * @returns {{ sas_url: string, filename: string }}
+ * @returns {{ file_url: string, filename: string }}
  */
 export const downloadDocument = async (documentId) => {
-  console.log("[AzureApi] GET /download/", documentId);
-  const res = await fetch(withKey(`${AZURE_BASE_URL}/download/${documentId}`));
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Download failed: ${res.status}`);
-  }
-  return res.json();
+  console.log("[AzureApi] GET /file?id=", documentId);
+  // The /file endpoint streams the blob — construct the URL with the function key
+  const file_url = withKey(`${AZURE_BASE_URL}/file?id=${documentId}`);
+  // We need the filename — fetch documents list or just return the URL
+  return { file_url, filename: "" };
 };
 
 // ─────────────────────────────────────────────

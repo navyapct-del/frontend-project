@@ -121,10 +121,11 @@ const Cards = (props) => {
     if (!docId) return;
     setDownloading(true);
     try {
-      const { sas_url, filename: fname } = await downloadDocument(docId);
-      // Trigger browser download
+      // Use the /file?id= endpoint which proxies the private blob
+      const { downloadDocument: dl } = await import("../../config/AzureApi");
+      const { file_url, filename: fname } = await dl(docId);
       const a = document.createElement("a");
-      a.href = sas_url;
+      a.href = file_url;
       a.download = fname || filename;
       a.target = "_blank";
       document.body.appendChild(a);
