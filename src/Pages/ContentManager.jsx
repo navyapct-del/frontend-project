@@ -370,9 +370,9 @@ export default function ContentManager(props) {
           )}
         </div>
 
-      </div> {/* end s.card */}
-      </div> {/* end main content */}
-    </div> {/* end outer row */}
+      </div>
+      </div>
+    </div>
   );
 }
 
