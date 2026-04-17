@@ -4,6 +4,10 @@
  */
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
+const APIM_KEY = import.meta.env.VITE_AZURE_APIM_KEY || "";
+
+// Add APIM subscription key to all requests if present
+const apimHeaders = APIM_KEY ? { "Ocp-Apim-Subscription-Key": APIM_KEY } : {};
 
 console.log("[AzureApi] Base URL:", AZURE_BASE_URL);
 
@@ -12,7 +16,7 @@ console.log("[AzureApi] Base URL:", AZURE_BASE_URL);
 // ─────────────────────────────────────────────
 
 export const checkHealth = async () => {
-  const res = await fetch(`${AZURE_BASE_URL}/health`);
+  const res = await fetch(`${AZURE_BASE_URL}/health`, { headers: apimHeaders });
   return res.json();
 };
 
@@ -22,7 +26,7 @@ export const checkHealth = async () => {
 
 export const listDocuments = async () => {
   console.log("[AzureApi] GET /documents");
-  const res = await fetch(`${AZURE_BASE_URL}/documents`);
+  const res = await fetch(`${AZURE_BASE_URL}/documents`, { headers: apimHeaders });
   if (!res.ok) throw new Error(`listDocuments failed: ${res.status}`);
   const data = await res.json();
   console.log("[AzureApi] /documents response:", data);
@@ -51,10 +55,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${AZURE_BASE_URL}/upload`);
-
-      Object.entries(extraFields).forEach(([k, v]) => {
-        if (!formData.has(k)) formData.append(k, v);
-      });
+      if (APIM_KEY) xhr.setRequestHeader("Ocp-Apim-Subscription-Key", APIM_KEY);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -68,7 +69,6 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
           try {
             const parsed = JSON.parse(xhr.responseText);
             if (parsed.error) errMsg = parsed.error;
-            if (parsed.duplicate) errMsg = parsed.error;
           } catch {}
           reject(new Error(errMsg));
         }
@@ -81,6 +81,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 
   const res = await fetch(`${AZURE_BASE_URL}/upload`, {
     method: "POST",
+    headers: apimHeaders,
     body: formData,
   });
 
@@ -109,6 +110,7 @@ export const deleteDocument = async (documentId) => {
   console.log("[AzureApi] DELETE /document/", documentId);
   const res = await fetch(`${AZURE_BASE_URL}/document/${documentId}`, {
     method: "DELETE",
+    headers: apimHeaders,
   });
   if (!res.ok && res.status !== 404) {
     const err = await res.json().catch(() => ({}));
@@ -134,7 +136,7 @@ export const queryDocuments = async (question, filenameFilter = "", history = []
   console.log("[AzureApi] POST /query →", question);
   const res = await fetch(`${AZURE_BASE_URL}/query`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...apimHeaders },
     body: JSON.stringify({
       q: question,
       filename: filenameFilter,
@@ -157,7 +159,7 @@ export const cleanupSession = async (sessionId) => {
   console.log("[AzureApi] POST /cleanup-session →", sessionId);
   const res = await fetch(`${AZURE_BASE_URL}/cleanup-session`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...apimHeaders },
     body: JSON.stringify({ session_id: sessionId }),
   });
   if (!res.ok) {
