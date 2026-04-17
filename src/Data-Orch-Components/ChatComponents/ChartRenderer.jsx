@@ -51,9 +51,10 @@ export function ChartRenderer({ data }) {
     );
   }
 
-  // Shape B (legacy): { type:"chart", data:[], chart_config:{ xKey, series } }
+  // Shape B (legacy): { type:"chart", data:[], chart_config:{ type, xKey, series } }
   if (data.data?.length > 0 && data.chart_config) {
-    const { xKey, series } = data.chart_config;
+    const { type: cfgType, xKey, series } = data.chart_config;
+    const chartType = (cfgType || "bar").toLowerCase();
     const seriesArr = Array.isArray(series) ? series : [series];
     const chartData = {
       labels: data.data.map((r) => String(r[xKey] ?? "")),
@@ -61,17 +62,23 @@ export function ChartRenderer({ data }) {
         label: s,
         data: data.data.map((r) => Number(r[s]) || 0),
         backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+        borderColor: CHART_COLORS[i % CHART_COLORS.length],
+        borderWidth: 1,
       })),
     };
     const options = {
       responsive: true,
       plugins: { legend: { position: "top" } },
-      scales: { y: { beginAtZero: true } },
+      scales: chartType !== "pie" ? { y: { beginAtZero: true } } : undefined,
     };
     return (
       <div style={{ maxWidth: "420px", marginTop: "8px" }}>
         {data.answer && <p style={{ fontSize: "13px", marginBottom: "8px" }}>{data.answer}</p>}
-        <Bar data={chartData} options={options} />
+        {chartType === "pie"  && <Pie  data={chartData} options={options} />}
+        {chartType === "line" && <Line data={chartData} options={options} />}
+        {(chartType === "bar" || !["pie", "line"].includes(chartType)) && (
+          <Bar data={chartData} options={options} />
+        )}
       </div>
     );
   }
