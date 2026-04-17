@@ -18,35 +18,42 @@ ChartJS.register(
 const CHART_COLORS = [
   "#0d3347", "#c0605a", "#2196f3", "#4caf50",
   "#ff9800", "#9c27b0", "#00bcd4", "#ff5722",
+  "#e91e63", "#8bc34a", "#ffc107", "#3f51b5",
+  "#009688", "#795548", "#607d8b", "#f44336",
+  "#673ab7", "#03a9f4", "#cddc39", "#ff6f00",
 ];
 
 export function ChartRenderer({ data }) {
   // Shape A (new): { type:"chart", chart_type, labels, values, answer }
   if (data.labels && data.values) {
     const chartType = (data.chart_type || "bar").toLowerCase();
+    const isPie = chartType === "pie";
     const chartData = {
       labels: data.labels,
       datasets: [{
         label: data.answer || "Result",
         data: data.values,
-        backgroundColor: data.labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
-        borderColor: data.labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+        // Pie: one color per slice. Bar/Line: single color for the series.
+        backgroundColor: isPie
+          ? data.labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length])
+          : CHART_COLORS[0],
+        borderColor: isPie
+          ? data.labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length])
+          : CHART_COLORS[0],
         borderWidth: 1,
       }],
     };
     const options = {
       responsive: true,
       plugins: { legend: { position: "top" }, title: { display: false } },
-      scales: chartType !== "pie" ? { y: { beginAtZero: true } } : undefined,
+      scales: !isPie ? { y: { beginAtZero: true } } : undefined,
     };
     return (
       <div style={{ maxWidth: "420px", marginTop: "8px" }}>
         {data.answer && <p style={{ fontSize: "13px", marginBottom: "8px" }}>{data.answer}</p>}
-        {chartType === "pie"  && <Pie  data={chartData} options={options} />}
+        {isPie && <Pie  data={chartData} options={options} />}
         {chartType === "line" && <Line data={chartData} options={options} />}
-        {(chartType === "bar" || !["pie","line"].includes(chartType)) && (
-          <Bar data={chartData} options={options} />
-        )}
+        {(!isPie && chartType !== "line") && <Bar data={chartData} options={options} />}
       </div>
     );
   }
@@ -55,30 +62,40 @@ export function ChartRenderer({ data }) {
   if (data.data?.length > 0 && data.chart_config) {
     const { type: cfgType, xKey, series } = data.chart_config;
     const chartType = (cfgType || "bar").toLowerCase();
+    const isPie = chartType === "pie";
     const seriesArr = Array.isArray(series) ? series : [series];
+    const labels = data.data.map((r) => String(r[xKey] ?? ""));
     const chartData = {
-      labels: data.data.map((r) => String(r[xKey] ?? "")),
-      datasets: seriesArr.map((s, i) => ({
-        label: s,
-        data: data.data.map((r) => Number(r[s]) || 0),
-        backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
-        borderColor: CHART_COLORS[i % CHART_COLORS.length],
-        borderWidth: 1,
-      })),
+      labels,
+      datasets: isPie
+        // Pie with single series: one color per label/slice
+        ? [{
+            label: seriesArr[0],
+            data: data.data.map((r) => Number(r[seriesArr[0]]) || 0),
+            backgroundColor: labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
+            borderColor: "#fff",
+            borderWidth: 2,
+          }]
+        // Bar/Line: one color per series
+        : seriesArr.map((s, i) => ({
+            label: s,
+            data: data.data.map((r) => Number(r[s]) || 0),
+            backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
+            borderColor: CHART_COLORS[i % CHART_COLORS.length],
+            borderWidth: 1,
+          })),
     };
     const options = {
       responsive: true,
       plugins: { legend: { position: "top" } },
-      scales: chartType !== "pie" ? { y: { beginAtZero: true } } : undefined,
+      scales: !isPie ? { y: { beginAtZero: true } } : undefined,
     };
     return (
       <div style={{ maxWidth: "420px", marginTop: "8px" }}>
         {data.answer && <p style={{ fontSize: "13px", marginBottom: "8px" }}>{data.answer}</p>}
-        {chartType === "pie"  && <Pie  data={chartData} options={options} />}
+        {isPie && <Pie  data={chartData} options={options} />}
         {chartType === "line" && <Line data={chartData} options={options} />}
-        {(chartType === "bar" || !["pie", "line"].includes(chartType)) && (
-          <Bar data={chartData} options={options} />
-        )}
+        {(!isPie && chartType !== "line") && <Bar data={chartData} options={options} />}
       </div>
     );
   }

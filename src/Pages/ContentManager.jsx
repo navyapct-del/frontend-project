@@ -293,12 +293,12 @@ export default function ContentManager(props) {
                             </div>
                           </td>
                           <td style={{ ...s.td, maxWidth: "0", width: "30%" }}>
-                            <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "12px", color: "#6b7280" }} title={item.description}>
+                            <span style={{ display: "block", fontSize: "12px", color: "#6b7280", whiteSpace: "normal", wordBreak: "break-word", lineHeight: "1.5" }}>
                               {item.description || "—"}
                             </span>
                           </td>
                           <td style={{ ...s.td, maxWidth: "0", width: "20%" }}>
-                            <span style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "12px", color: "#6b7280" }} title={item.tags}>
+                            <span style={{ display: "block", fontSize: "12px", color: "#6b7280", whiteSpace: "normal", wordBreak: "break-word", lineHeight: "1.5" }}>
                               {item.tags || "—"}
                             </span>
                           </td>
