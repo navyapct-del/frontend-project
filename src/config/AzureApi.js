@@ -62,7 +62,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
   formData.append("tags", tags);
 
   // Append any extra fields (e.g. temp, session_id)
-  Object.entries(extraFields).forEach(([k, v]) => formData.append(k, v);
+  Object.entries(extraFields).forEach(([k, v]) => formData.append(k, v));
 
   // Use XMLHttpRequest if progress tracking is needed
   if (onProgress) {
@@ -72,7 +72,8 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 
       // Append extra fields to formData before sending
       Object.entries(extraFields).forEach(([k, v]) => {
-        if (!formData.has(k) formData.append(k, v);
+        if (!formData.has(k)) formData.append(k, v);
+      });
       });
 
       xhr.upload.onprogress = (e) => {
