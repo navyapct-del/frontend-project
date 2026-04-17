@@ -36,7 +36,7 @@ export const listDocuments = async () => {
     ...d,
     tags:        Array.isArray(d.tags) ? d.tags.join(", ") : (d.tags || ""),
     description: d.summary || d.description || "",
-  });
+  }));
   return normalized;
 };
 
