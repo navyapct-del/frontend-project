@@ -271,41 +271,41 @@ export default function ContentManager(props) {
                   <table style={s.listTable}>
                     <thead>
                       <tr style={s.listHead}>
-                        <th style={{ ...s.th, width: "35%" }}>Name</th>
-                        <th style={{ ...s.th, width: "30%" }}>Description</th>
-                        <th style={{ ...s.th, width: "20%" }}>Tags</th>
-                        <th style={{ ...s.th, width: "10%" }}>Date</th>
-                        <th style={{ ...s.th, width: "5%" }}>Actions</th>
+                        <th style={s.th}>Name</th>
+                        <th style={s.th}>Description</th>
+                        <th style={s.th}>Tags</th>
+                        <th style={{ ...s.th, whiteSpace: "nowrap" }}>Date</th>
+                        <th style={s.th}>Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {currentData.map((item, i) => (
                         <tr key={item.id} style={{ ...s.listRow, background: i % 2 === 0 ? "#fff" : "#f8f9fb" }}>
-                          <td style={{ ...s.td, maxWidth: "0", width: "35%" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: "8px", overflow: "hidden" }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" style={{ flexShrink: 0 }}>
+                          <td style={s.td}>
+                            <div style={{ display: "flex", alignItems: "flex-start", gap: "8px" }}>
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" style={{ flexShrink: 0, marginTop: "2px" }}>
                                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                                 <polyline points="14 2 14 8 20 8"/>
                               </svg>
-                              <span style={{ fontWeight: 500, fontSize: "13px", color: "#1f2937", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={item.name}>
+                              <span style={{ fontWeight: 500, fontSize: "13px", color: "#1f2937", wordBreak: "break-all" }}>
                                 {item.name}
                               </span>
                             </div>
                           </td>
-                          <td style={{ ...s.td, maxWidth: "0", width: "30%" }}>
-                            <span style={{ display: "block", fontSize: "12px", color: "#6b7280", whiteSpace: "normal", wordBreak: "break-word", lineHeight: "1.5" }}>
+                          <td style={{ ...s.td, fontSize: "12px", color: "#6b7280" }}>
+                            <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "1.6" }}>
                               {item.description || "—"}
                             </span>
                           </td>
-                          <td style={{ ...s.td, maxWidth: "0", width: "20%" }}>
-                            <span style={{ display: "block", fontSize: "12px", color: "#6b7280", whiteSpace: "normal", wordBreak: "break-word", lineHeight: "1.5" }}>
+                          <td style={{ ...s.td, fontSize: "12px", color: "#6b7280" }}>
+                            <span style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", lineHeight: "1.6" }}>
                               {item.tags || "—"}
                             </span>
                           </td>
-                          <td style={{ ...s.td, fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap", width: "10%" }}>
+                          <td style={{ ...s.td, fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap" }}>
                             {item.date ? new Date(item.date).toLocaleDateString() : "—"}
                           </td>
-                          <td style={{ ...s.td, width: "5%" }}>
+                          <td style={{ ...s.td, whiteSpace: "nowrap" }}>
                             <div style={{ display: "flex", gap: "6px" }}>
                               {item.id && (
                                 <a
@@ -474,11 +474,11 @@ const s = {
   content: { flex: 1, padding: "24px 28px", background: "#f8f9fb" },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(120px, 1fr))", gap: "16px" },
   listWrap: { overflowX: "auto" },
-  listTable: { width: "100%", borderCollapse: "collapse", fontSize: "13px", tableLayout: "fixed" },
+  listTable: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
   listHead: { background: "#0d3347" },
-  th: { padding: "10px 12px", textAlign: "left", fontWeight: "600", color: "#ffffff", borderBottom: "2px solid #0a2535", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" },
+  th: { padding: "10px 12px", textAlign: "left", fontWeight: "600", color: "#ffffff", borderBottom: "2px solid #0a2535", whiteSpace: "nowrap" },
   listRow: { borderBottom: "1px solid #f0f0f0", transition: "background 0.1s" },
-  td: { padding: "8px 12px", verticalAlign: "middle", height: "44px" },
+  td: { padding: "8px 12px", verticalAlign: "middle" },
   actionBtn: {
     display: "inline-flex", alignItems: "center", justifyContent: "center",
     width: "28px", height: "28px", borderRadius: "6px", border: "1px solid #e5e7eb",
