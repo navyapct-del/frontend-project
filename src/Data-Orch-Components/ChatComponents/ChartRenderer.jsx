@@ -63,21 +63,29 @@ export function ChartRenderer({ data }) {
     const { type: cfgType, xKey, series } = data.chart_config;
     const chartType = (cfgType || "bar").toLowerCase();
     const isPie = chartType === "pie";
-    const seriesArr = Array.isArray(series) ? series : [series];
+
+    // If series is empty, derive from data keys (all numeric keys except xKey)
+    const firstRow = data.data[0] || {};
+    const derivedSeries = series?.length > 0
+      ? series
+      : Object.keys(firstRow).filter(k => k !== xKey && typeof firstRow[k] === "number");
+
+    // If still no series, can't render
+    if (derivedSeries.length === 0) {
+      return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || "No chart data available."}</span>;
+    }
     const labels = data.data.map((r) => String(r[xKey] ?? ""));
     const chartData = {
       labels,
       datasets: isPie
-        // Pie with single series: one color per label/slice
         ? [{
-            label: seriesArr[0],
-            data: data.data.map((r) => Number(r[seriesArr[0]]) || 0),
+            label: derivedSeries[0],
+            data: data.data.map((r) => Number(r[derivedSeries[0]]) || 0),
             backgroundColor: labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]),
             borderColor: "#fff",
             borderWidth: 2,
           }]
-        // Bar/Line: one color per series
-        : seriesArr.map((s, i) => ({
+        : derivedSeries.map((s, i) => ({
             label: s,
             data: data.data.map((r) => Number(r[s]) || 0),
             backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
