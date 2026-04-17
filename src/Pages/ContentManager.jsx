@@ -309,7 +309,7 @@ export default function ContentManager(props) {
                             <div style={{ display: "flex", gap: "6px" }}>
                               {item.id && (
                                 <a
-                                  href={`${import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api"}/file?id=${item.id}${import.meta.env.VITE_AZURE_FUNCTION_KEY ? "&code=" + import.meta.env.VITE_AZURE_FUNCTION_KEY : ""}`}
+                                  href={`${import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api"}/file?id=${item.id}`}
                                   target="_blank"
                                   rel="noreferrer"
                                   style={s.actionBtn}
