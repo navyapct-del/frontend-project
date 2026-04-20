@@ -6,7 +6,8 @@ import React from "react";
 import { ChartRenderer } from "./ChartRenderer";
 import { ResultTable } from "./ResultTable";
 
-const CHART_INTENT_RE = /\b(plot|chart|graph|visuali[sz]e|bar chart|pie chart|line chart|show.*graph|how many|count|distribution|breakdown|compare|versus|vs\.?)\b/i;
+const CHART_INTENT_RE = /\b(plot|chart|graph|visuali[sz]e|bar chart|pie chart|line chart|show.*graph|distribution|breakdown|compare|versus|vs\.?)\b/i;
+const EXPLAIN_RE = /\b(explain|describe|what (is|does|are)|tell me (about|more)|summarize|summary|meaning|interpret|analyse|analyze)\b/i;
 
 // ── Smart text-to-chart parser ───────────────────────────────────────────────
 function parseChartFromText(answer, question) {
@@ -116,7 +117,7 @@ export function BotMessage({ msg }) {
     return <span style={{ whiteSpace: "pre-wrap" }}>{text || ""}</span>;
   }
 
-  const isChartQuery = originalQuery && CHART_INTENT_RE.test(originalQuery);
+  const isChartQuery = originalQuery && CHART_INTENT_RE.test(originalQuery) && !EXPLAIN_RE.test(originalQuery);
 
   if (data.type === "error") {
     return (
@@ -137,6 +138,10 @@ export function BotMessage({ msg }) {
   }
 
   if (data.type === "chart") {
+    // If user asked to explain/describe, show the answer as text instead of re-rendering a chart
+    if (originalQuery && EXPLAIN_RE.test(originalQuery)) {
+      return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || "Here is the explanation."}</span>;
+    }
     return <ChartRenderer data={data} />;
   }
 
