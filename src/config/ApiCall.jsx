@@ -1,8 +1,7 @@
 /**
  * ApiCall.jsx
  * -----------
- * All legacy AWS calls replaced with Azure Function App equivalents.
- * Endpoints map to: https://dataocrhfunapp-g6ekg0bvhqfycma2.eastus-01.azurewebsites.net/api
+ * All calls go through APIM → Azure Function App backend.
  */
 
 import { uploadDocument, listDocuments, checkHealth, queryDocuments } from "./AzureApi";
@@ -41,19 +40,18 @@ export const getUploadData = async (inputFields, userEmail, currentFolder) => {
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
 const FUNCTION_KEY   = import.meta.env.VITE_AZURE_FUNCTION_KEY || "";
 
-function withKey(url) {
-  if (!FUNCTION_KEY) return url;
-  const sep = url.includes("?") ? "&" : "?";
-  return `${url}${sep}code=${FUNCTION_KEY}`;
-}
+const authHeaders = FUNCTION_KEY ? { "x-functions-key": FUNCTION_KEY } : {};
 
 export const createKendraIndex = async () => {
-  const res = await fetch(withKey(`${AZURE_BASE_URL}/reset-index`), { method: "POST" });
+  const res = await fetch(`${AZURE_BASE_URL}/reset-index`, {
+    method: "POST",
+    headers: authHeaders,
+  });
   return res.json();
 };
 
 export const getKendraStatus = async () => {
-  const res = await fetch(withKey(`${AZURE_BASE_URL}/diagnose`));
+  const res = await fetch(`${AZURE_BASE_URL}/diagnose`, { headers: authHeaders });
   return res.json();
 };
 
@@ -62,9 +60,9 @@ export const getStepFunctionStatus = async () => {
 };
 
 export const deleteKendraIndex = async () => {
-  const res = await fetch(withKey(`${AZURE_BASE_URL}/reset-index`), {
+  const res = await fetch(`${AZURE_BASE_URL}/reset-index`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify({ confirm_delete: true }),
   });
   return res.json();

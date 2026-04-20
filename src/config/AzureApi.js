@@ -1,22 +1,23 @@
 /**
  * AzureApi.js
- * All calls to the Azure Function App backend.
+ * All calls go through APIM → Azure Function App backend.
  */
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
-const APIM_KEY = import.meta.env.VITE_AZURE_APIM_KEY || "";
+const FUNCTION_KEY   = import.meta.env.VITE_AZURE_FUNCTION_KEY || "";
 
-// Add APIM subscription key to all requests if present
-const apimHeaders = APIM_KEY ? { "Ocp-Apim-Subscription-Key": APIM_KEY } : {};
-
-console.log("[AzureApi] Base URL:", AZURE_BASE_URL);
+// APIM injects x-functions-key automatically via policy.
+// We still send it from the frontend as a fallback for direct calls.
+const authHeaders = FUNCTION_KEY
+  ? { "x-functions-key": FUNCTION_KEY }
+  : {};
 
 // ─────────────────────────────────────────────
 // Health
 // ─────────────────────────────────────────────
 
 export const checkHealth = async () => {
-  const res = await fetch(`${AZURE_BASE_URL}/health`, { headers: apimHeaders });
+  const res = await fetch(`${AZURE_BASE_URL}/health`, { headers: authHeaders });
   return res.json();
 };
 
@@ -25,11 +26,9 @@ export const checkHealth = async () => {
 // ─────────────────────────────────────────────
 
 export const listDocuments = async () => {
-  console.log("[AzureApi] GET /documents");
-  const res = await fetch(`${AZURE_BASE_URL}/documents`, { headers: apimHeaders });
+  const res = await fetch(`${AZURE_BASE_URL}/documents`, { headers: authHeaders });
   if (!res.ok) throw new Error(`listDocuments failed: ${res.status}`);
   const data = await res.json();
-  console.log("[AzureApi] /documents response:", data);
   const rawArray = Array.isArray(data) ? data : (Array.isArray(data?.value) ? data.value : []);
   return rawArray.map(d => ({
     ...d,
@@ -55,7 +54,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${AZURE_BASE_URL}/upload`);
-      if (APIM_KEY) xhr.setRequestHeader("Ocp-Apim-Subscription-Key", APIM_KEY);
+      if (FUNCTION_KEY) xhr.setRequestHeader("x-functions-key", FUNCTION_KEY);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -81,7 +80,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 
   const res = await fetch(`${AZURE_BASE_URL}/upload`, {
     method: "POST",
-    headers: apimHeaders,
+    headers: authHeaders,
     body: formData,
   });
 
@@ -107,10 +106,9 @@ export const downloadDocument = async (documentId) => {
 // ─────────────────────────────────────────────
 
 export const deleteDocument = async (documentId) => {
-  console.log("[AzureApi] DELETE /document/", documentId);
   const res = await fetch(`${AZURE_BASE_URL}/document/${documentId}`, {
     method: "DELETE",
-    headers: apimHeaders,
+    headers: authHeaders,
   });
   if (!res.ok && res.status !== 404) {
     const err = await res.json().catch(() => ({}));
@@ -133,10 +131,9 @@ const detectChartIntent = (question) =>
   CHART_INTENT_KEYWORDS.some((kw) => question.toLowerCase().includes(kw));
 
 export const queryDocuments = async (question, filenameFilter = "", history = []) => {
-  console.log("[AzureApi] POST /query →", question);
   const res = await fetch(`${AZURE_BASE_URL}/query`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...apimHeaders },
+    headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify({
       q: question,
       filename: filenameFilter,
@@ -156,10 +153,9 @@ export const queryDocuments = async (question, filenameFilter = "", history = []
 // ─────────────────────────────────────────────
 
 export const cleanupSession = async (sessionId) => {
-  console.log("[AzureApi] POST /cleanup-session →", sessionId);
   const res = await fetch(`${AZURE_BASE_URL}/cleanup-session`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...apimHeaders },
+    headers: { "Content-Type": "application/json", ...authHeaders },
     body: JSON.stringify({ session_id: sessionId }),
   });
   if (!res.ok) {
