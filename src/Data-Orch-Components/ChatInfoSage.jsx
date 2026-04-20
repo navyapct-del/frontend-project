@@ -186,14 +186,8 @@ const ChatInfoSage = () => {
                         <a key={j} href={img.url} target="_blank" rel="noopener noreferrer">
                           <img src={img.thumbnail} alt={img.title || img.name}
                             className="w-full max-h-48 object-cover rounded hover:opacity-80" />
-                          {img.title && <p className="text-xs text-gray-400 mt-0.5 truncate">{img.title}</p>}
                         </a>
                       ))}
-                      {msg.imageSource && (
-                        <p className="text-xs text-gray-400 mt-1">
-                          Source: <span className="font-medium capitalize">{msg.imageSource.replace(/_/g, " ")}</span>
-                        </p>
-                      )}
                     </div>
                   )}
                 </div>
