@@ -109,7 +109,7 @@ const ChatInfoSage = () => {
   const buildMessage = (data) => {
     const type = data.type || "text";
     if (type === "image") {
-      return { type: "system", responseType: "image", images: data.data || [] };
+      return { type: "system", responseType: "image", images: data.data || [], imageSource: data.source || "" };
     }
     if (type === "chart") {
       return { type: "system", responseType: "chart", chartData: data.data };
@@ -181,13 +181,19 @@ const ChatInfoSage = () => {
                   {(msg.images || []).length === 0 ? (
                     <p className="text-sm text-gray-500">No images found.</p>
                   ) : (
-                    <div className="grid grid-cols-2 gap-1">
+                    <div className="flex flex-col gap-1">
                       {msg.images.map((img, j) => (
                         <a key={j} href={img.url} target="_blank" rel="noopener noreferrer">
-                          <img src={img.thumbnail} alt={img.name}
-                            className="w-full h-20 object-cover rounded hover:opacity-80" />
+                          <img src={img.thumbnail} alt={img.title || img.name}
+                            className="w-full max-h-48 object-cover rounded hover:opacity-80" />
+                          {img.title && <p className="text-xs text-gray-400 mt-0.5 truncate">{img.title}</p>}
                         </a>
                       ))}
+                      {msg.imageSource && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          Source: <span className="font-medium capitalize">{msg.imageSource.replace(/_/g, " ")}</span>
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
