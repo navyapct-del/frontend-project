@@ -21,16 +21,22 @@ function getFileType(filename = "") {
 }
 
 const FILE_TYPE_LABELS = [
-  { key: "all",   label: "All",   icon: "M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z" },
-  { key: "pdf",   label: "PDF",   icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
-  { key: "word",  label: "Word",  icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
-  { key: "csv",   label: "CSV",   icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
-  { key: "excel", label: "Excel", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
-  { key: "txt",   label: "TXT",   icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
+  { key: "all",   label: "All Files",  color: "#0d3347", bg: "#e0f2fe",
+    icon: <><rect x="3" y="3" width="7" height="7" rx="1.5" fill="#0d3347"/><rect x="14" y="3" width="7" height="7" rx="1.5" fill="#0d3347"/><rect x="3" y="14" width="7" height="7" rx="1.5" fill="#0d3347"/><rect x="14" y="14" width="7" height="7" rx="1.5" fill="#0d3347"/></> },
+  { key: "pdf",   label: "PDF",        color: "#dc2626", bg: "#fee2e2",
+    icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="#fee2e2" stroke="#dc2626" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="#dc2626" strokeWidth="1.5"/><text x="7" y="17" fontSize="5" fontWeight="bold" fill="#dc2626">PDF</text></> },
+  { key: "word",  label: "Word",       color: "#2563eb", bg: "#dbeafe",
+    icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="#dbeafe" stroke="#2563eb" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="#2563eb" strokeWidth="1.5"/><text x="7" y="17" fontSize="5" fontWeight="bold" fill="#2563eb">DOC</text></> },
+  { key: "csv",   label: "CSV",        color: "#059669", bg: "#d1fae5",
+    icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="#d1fae5" stroke="#059669" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="#059669" strokeWidth="1.5"/><text x="7" y="17" fontSize="5" fontWeight="bold" fill="#059669">CSV</text></> },
+  { key: "excel", label: "Excel",      color: "#16a34a", bg: "#dcfce7",
+    icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="#dcfce7" stroke="#16a34a" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="#16a34a" strokeWidth="1.5"/><text x="7" y="17" fontSize="5" fontWeight="bold" fill="#16a34a">XLS</text></> },
+  { key: "txt",   label: "Text",       color: "#7c3aed", bg: "#ede9fe",
+    icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="#ede9fe" stroke="#7c3aed" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="#7c3aed" strokeWidth="1.5"/><text x="8" y="17" fontSize="5" fontWeight="bold" fill="#7c3aed">TXT</text></> },
 ];
 
 const TYPE_COLORS = {
-  pdf: "#e53e3e", word: "#3182ce", csv: "#38a169", excel: "#2f855a", txt: "#718096", other: "#a0aec0",
+  pdf: "#dc2626", word: "#2563eb", csv: "#059669", excel: "#16a34a", txt: "#7c3aed", other: "#9ca3af",
 };
 
 export default function ContentManager(props) {
@@ -156,31 +162,30 @@ export default function ContentManager(props) {
       {/* ── File-type filter sidebar ── */}
       <div style={sd.sidebar}>
         <div style={sd.sidebarHeader}>
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
           <span style={sd.sidebarTitle}>File Types</span>
         </div>
         <div style={sd.sidebarList}>
-          {FILE_TYPE_LABELS.map(({ key, label }) => {
+          {FILE_TYPE_LABELS.map(({ key, label, color, bg, icon }) => {
             const count = key === "all" ? allData.length : allData.filter(d => d.file_type === key).length;
             const isActive = selectedFileType === key;
-            const color = key === "all" ? "#0d3347" : TYPE_COLORS[key];
             return (
               <div
                 key={key}
-                style={{ ...sd.docItem, background: isActive ? "#dbeafe" : "transparent" }}
+                style={{ ...sd.docItem, background: isActive ? bg : "transparent", borderLeft: isActive ? `3px solid ${color}` : "3px solid transparent" }}
                 onClick={() => {
                   setSelectedFileType(key);
                   setFilteredData(key === "all" ? allData : allData.filter(d => d.file_type === key));
                   setCurrentPage(0);
                 }}
               >
-                <span style={{ ...sd.typeDot, background: color }} />
-                <span style={{ ...sd.docName, color: isActive ? "#0d3347" : "#374151", fontWeight: isActive ? "600" : "400" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>{icon}</svg>
+                <span style={{ ...sd.docName, color: isActive ? color : "#374151", fontWeight: isActive ? "700" : "400" }}>
                   {label}
                 </span>
-                <span style={{ ...sd.badge, background: isActive ? "#0d3347" : "#e5e7eb", color: isActive ? "#fff" : "#6b7280" }}>
+                <span style={{ ...sd.badge, background: isActive ? color : "#e5e7eb", color: isActive ? "#fff" : "#6b7280" }}>
                   {count}
                 </span>
               </div>
@@ -396,31 +401,32 @@ export default function ContentManager(props) {
 // ── Sidebar styles ────────────────────────────────────────────────────────────
 const sd = {
   sidebar: {
-    width: "200px",
+    width: "190px",
     flexShrink: 0,
-    background: "#f0f7fa",
+    background: "#ffffff",
     borderRadius: "14px",
-    border: "1.5px solid #bee3f8",
+    border: "1px solid #e5e7eb",
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
     alignSelf: "flex-start",
     position: "sticky",
     top: "16px",
-    maxHeight: "calc(100vh - 140px)",
+    boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
   },
   sidebarHeader: {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    padding: "12px 14px",
-    borderBottom: "1px solid #bee3f8",
-    background: "#e0f2fe",
+    padding: "13px 14px",
+    background: "linear-gradient(135deg, #0d3347 0%, #1a5276 100%)",
   },
   sidebarTitle: {
-    fontSize: "13px",
+    fontSize: "12px",
     fontWeight: "700",
-    color: "#0d3347",
+    color: "#ffffff",
+    letterSpacing: "0.05em",
+    textTransform: "uppercase",
   },
   sidebarList: {
     flex: 1,
@@ -430,28 +436,29 @@ const sd = {
   docItem: {
     display: "flex",
     alignItems: "center",
-    gap: "8px",
-    padding: "9px 14px",
+    gap: "9px",
+    padding: "10px 12px 10px 10px",
     cursor: "pointer",
     transition: "background 0.15s",
-    borderBottom: "1px solid #e0f2fe",
+    borderBottom: "1px solid #f3f4f6",
+    borderLeft: "3px solid transparent",
   },
   docName: {
-    fontSize: "12px",
+    fontSize: "12.5px",
     flex: 1,
   },
   typeDot: {
-    width: "9px",
-    height: "9px",
+    width: "8px",
+    height: "8px",
     borderRadius: "50%",
     flexShrink: 0,
   },
   badge: {
-    fontSize: "11px",
-    fontWeight: "600",
-    padding: "1px 7px",
+    fontSize: "10px",
+    fontWeight: "700",
+    padding: "2px 6px",
     borderRadius: "10px",
-    minWidth: "22px",
+    minWidth: "20px",
     textAlign: "center",
   },
 };
