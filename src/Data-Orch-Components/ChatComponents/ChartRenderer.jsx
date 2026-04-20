@@ -109,24 +109,117 @@ function buildPieOptions(title) {
   };
 }
 
-// Insight bar: max value highlighted
-function InsightBar({ labels, values }) {
-  if (!labels?.length) return null;
-  const max = Math.max(...values);
-  const min = Math.min(...values);
-  const avg = (values.reduce((a, b) => a + b, 0) / values.length).toFixed(1);
-  const maxLabel = labels[values.indexOf(max)];
-  const minLabel = labels[values.indexOf(min)];
+// ── Insight helpers ──────────────────────────────────────────────────────────
+function median(vals) {
+  const s = [...vals].sort((a, b) => a - b);
+  const m = Math.floor(s.length / 2);
+  return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2;
+}
+
+function trend(vals) {
+  if (vals.length < 2) return "stable";
+  const first = vals[0], last = vals[vals.length - 1];
+  const pct = ((last - first) / (Math.abs(first) || 1)) * 100;
+  if (pct > 5)  return { dir: "up",   pct: pct.toFixed(1) };
+  if (pct < -5) return { dir: "down", pct: Math.abs(pct).toFixed(1) };
+  return { dir: "stable", pct: "0" };
+}
+
+function InsightsPanel({ labels, values }) {
+  if (!labels?.length || !values?.length) return null;
+
+  const max    = Math.max(...values);
+  const min    = Math.min(...values);
+  const total  = values.reduce((a, b) => a + b, 0);
+  const avg    = total / values.length;
+  const med    = median(values);
+  const spread = max - min;
+  const t      = trend(values);
+  const maxIdx = values.indexOf(max);
+  const minIdx = values.indexOf(min);
+
+  // Top 3 by value
+  const ranked = labels
+    .map((l, i) => ({ l, v: values[i] }))
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 3);
+
+  const trendColor = t.dir === "up" ? "#16a34a" : t.dir === "down" ? "#dc2626" : "#64748b";
+  const trendIcon  = t.dir === "up" ? "↑" : t.dir === "down" ? "↓" : "→";
+
+  const cards = [
+    { label: "Total",   value: total.toLocaleString(),          sub: `across ${labels.length} items`,   bg: "#eff6ff", border: "#3b82f6", text: "#1d4ed8" },
+    { label: "Highest", value: max.toLocaleString(),            sub: labels[maxIdx],                     bg: "#dcfce7", border: "#16a34a", text: "#15803d" },
+    { label: "Lowest",  value: min.toLocaleString(),            sub: labels[minIdx],                     bg: "#fee2e2", border: "#dc2626", text: "#b91c1c" },
+    { label: "Average", value: avg.toLocaleString(undefined, { maximumFractionDigits: 1 }), sub: `median: ${med.toLocaleString(undefined, { maximumFractionDigits: 1 })}`, bg: "#fefce8", border: "#ca8a04", text: "#92400e" },
+    { label: "Spread",  value: spread.toLocaleString(),         sub: "max − min range",                  bg: "#f5f3ff", border: "#7c3aed", text: "#5b21b6" },
+    { label: "Trend",   value: `${trendIcon} ${t.pct}%`,        sub: t.dir === "stable" ? "stable" : `${t.dir}ward from first to last`, bg: t.dir === "up" ? "#dcfce7" : t.dir === "down" ? "#fee2e2" : "#f1f5f9", border: trendColor, text: trendColor },
+  ];
+
   return (
-    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "14px" }}>
-      {[
-        { label: "Highest", value: `${max.toLocaleString()} — ${maxLabel}`, color: "#dcfce7", border: "#16a34a", text: "#15803d" },
-        { label: "Lowest",  value: `${min.toLocaleString()} — ${minLabel}`, color: "#fee2e2", border: "#dc2626", text: "#b91c1c" },
-        { label: "Average", value: Number(avg).toLocaleString(),             color: "#eff6ff", border: "#3b82f6", text: "#1d4ed8" },
-      ].map(({ label, value, color, border, text }) => (
-        <div key={label} style={{ flex: "1 1 120px", background: color, border: `1px solid ${border}`, borderRadius: "8px", padding: "8px 12px" }}>
-          <div style={{ fontSize: "10px", fontWeight: "700", color: text, textTransform: "uppercase", letterSpacing: "0.06em" }}>{label}</div>
-          <div style={{ fontSize: "12px", fontWeight: "600", color: "#1e293b", marginTop: "2px" }}>{value}</div>
+    <div style={{ marginBottom: "18px" }}>
+      {/* KPI cards */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "8px", marginBottom: "14px" }}>
+        {cards.map(({ label, value, sub, bg, border, text }) => (
+          <div key={label} style={{ background: bg, border: `1px solid ${border}`, borderRadius: "10px", padding: "10px 12px" }}>
+            <div style={{ fontSize: "10px", fontWeight: "700", color: text, textTransform: "uppercase", letterSpacing: "0.07em" }}>{label}</div>
+            <div style={{ fontSize: "15px", fontWeight: "800", color: "#0f172a", margin: "3px 0 2px" }}>{value}</div>
+            <div style={{ fontSize: "10px", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={sub}>{sub}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Top 3 podium */}
+      <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "10px 14px" }}>
+        <div style={{ fontSize: "10px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: "8px" }}>
+          🏆 Top Performers
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {ranked.map(({ l, v }, i) => {
+            const pct = max ? (v / max) * 100 : 0;
+            const medals = ["🥇", "🥈", "🥉"];
+            const barColors = ["#4F86F7", "#2ECC71", "#F39C12"];
+            return (
+              <div key={l} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <span style={{ fontSize: "13px", width: "18px" }}>{medals[i]}</span>
+                <span style={{ fontSize: "11px", color: "#334155", width: "140px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={l}>{l}</span>
+                <div style={{ flex: 1, background: "#e2e8f0", borderRadius: "4px", height: "8px", overflow: "hidden" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", background: barColors[i], borderRadius: "4px", transition: "width 0.6s ease" }} />
+                </div>
+                <span style={{ fontSize: "11px", fontWeight: "700", color: "#0f172a", minWidth: "40px", textAlign: "right" }}>{v.toLocaleString()}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Pie-specific insights
+function PieInsightsPanel({ labels, values }) {
+  if (!labels?.length) return null;
+  const total = values.reduce((a, b) => a + b, 0);
+  const ranked = labels.map((l, i) => ({ l, v: values[i], pct: total ? ((values[i] / total) * 100).toFixed(1) : 0 }))
+    .sort((a, b) => b.v - a.v);
+  const dominant = ranked[0];
+  return (
+    <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", marginBottom: "14px" }}>
+      <div style={{ flex: "1 1 140px", background: "#eff6ff", border: "1px solid #3b82f6", borderRadius: "10px", padding: "10px 12px" }}>
+        <div style={{ fontSize: "10px", fontWeight: "700", color: "#1d4ed8", textTransform: "uppercase", letterSpacing: "0.07em" }}>Total</div>
+        <div style={{ fontSize: "15px", fontWeight: "800", color: "#0f172a", margin: "3px 0 2px" }}>{total.toLocaleString()}</div>
+        <div style={{ fontSize: "10px", color: "#64748b" }}>{labels.length} categories</div>
+      </div>
+      <div style={{ flex: "1 1 140px", background: "#dcfce7", border: "1px solid #16a34a", borderRadius: "10px", padding: "10px 12px" }}>
+        <div style={{ fontSize: "10px", fontWeight: "700", color: "#15803d", textTransform: "uppercase", letterSpacing: "0.07em" }}>Dominant</div>
+        <div style={{ fontSize: "15px", fontWeight: "800", color: "#0f172a", margin: "3px 0 2px" }}>{dominant.pct}%</div>
+        <div style={{ fontSize: "10px", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={dominant.l}>{dominant.l}</div>
+      </div>
+      {ranked.slice(0, 3).map(({ l, v, pct }, i) => (
+        <div key={l} style={{ flex: "1 1 100px", background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: "10px", padding: "10px 12px" }}>
+          <div style={{ fontSize: "10px", fontWeight: "700", color: "#64748b", textTransform: "uppercase", letterSpacing: "0.07em" }}>#{i + 1}</div>
+          <div style={{ fontSize: "13px", fontWeight: "700", color: "#0f172a", margin: "3px 0 2px" }}>{pct}%</div>
+          <div style={{ fontSize: "10px", color: "#64748b", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }} title={l}>{l}</div>
         </div>
       ))}
     </div>
@@ -165,8 +258,8 @@ export function ChartRenderer({ data }) {
     return (
       <div style={wrap}>
         {data.answer && <p style={answerStyle}>{data.answer}</p>}
-        {!isPie && <InsightBar labels={data.labels} values={data.values} />}
-        <div style={{ height: isPie ? "340px" : "360px", position: "relative" }}>
+        {isPie  ? <PieInsightsPanel labels={data.labels} values={data.values} /> : <InsightsPanel labels={data.labels} values={data.values} />}
+        <div style={{ height: isPie ? "320px" : "360px", position: "relative" }}>
           {isPie  && <Pie  data={chartData} options={buildPieOptions(title)} />}
           {isLine && <Line data={chartData} options={buildLineOptions(title)} />}
           {!isPie && !isLine && <Bar data={chartData} options={buildBarOptions(title)} />}
@@ -220,8 +313,8 @@ export function ChartRenderer({ data }) {
     return (
       <div style={wrap}>
         {data.answer && <p style={answerStyle}>{data.answer}</p>}
-        {!isPie && <InsightBar labels={labels} values={allValues} />}
-        <div style={{ height: isPie ? "340px" : "360px", position: "relative" }}>
+        {isPie ? <PieInsightsPanel labels={labels} values={allValues} /> : <InsightsPanel labels={labels} values={allValues} />}
+        <div style={{ height: isPie ? "320px" : "360px", position: "relative" }}>
           {isPie  && <Pie  data={chartData} options={buildPieOptions(title)} />}
           {isLine && <Line data={chartData} options={buildLineOptions(title)} />}
           {!isPie && !isLine && <Bar data={chartData} options={buildBarOptions(title)} />}
