@@ -4,13 +4,9 @@
  */
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
-const FUNCTION_KEY   = import.meta.env.VITE_AZURE_FUNCTION_KEY || "";
 
-// APIM injects x-functions-key automatically via policy.
-// We still send it from the frontend as a fallback for direct calls.
-const authHeaders = FUNCTION_KEY
-  ? { "x-functions-key": FUNCTION_KEY }
-  : {};
+// No function key needed — backend is protected by APIM + IP restrictions
+const authHeaders = {};
 
 // ─────────────────────────────────────────────
 // Health
@@ -54,7 +50,6 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${AZURE_BASE_URL}/upload`);
-      if (FUNCTION_KEY) xhr.setRequestHeader("x-functions-key", FUNCTION_KEY);
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));

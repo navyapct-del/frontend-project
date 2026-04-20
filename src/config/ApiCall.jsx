@@ -38,9 +38,9 @@ export const getUploadData = async (inputFields, userEmail, currentFolder) => {
 };
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
-const FUNCTION_KEY   = import.meta.env.VITE_AZURE_FUNCTION_KEY || "";
 
-const authHeaders = FUNCTION_KEY ? { "x-functions-key": FUNCTION_KEY } : {};
+// No function key needed — backend protected by APIM + IP restrictions
+const authHeaders = {};
 
 export const createKendraIndex = async () => {
   const res = await fetch(`${AZURE_BASE_URL}/reset-index`, {
