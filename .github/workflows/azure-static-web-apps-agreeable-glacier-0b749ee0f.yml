@@ -36,9 +36,7 @@ jobs:
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         env:
-          VITE_AZURE_API_URL: https://data-orch-apim-consumption.azure-api.net/dataocrhfunapp
-          VITE_AZURE_APIM_KEY: d9668940e6b645b0a1f915ca6ae832cd
-          VITE_AZURE_FUNCTION_KEY: ${{ secrets.VITE_AZURE_FUNCTION_KEY }}
+          VITE_AZURE_API_URL: https://data-orch-apim-consumption.azure-api.net/api
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_AGREEABLE_GLACIER_0B749EE0F }}
           action: "upload"
