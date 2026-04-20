@@ -2,9 +2,11 @@
  * BotMessage.jsx — shared bot message renderer.
  * Handles text, table, chart, and error response types.
  */
-import React from "react";
+import React, { useState } from "react";
 import { ChartRenderer } from "./ChartRenderer";
 import { ResultTable } from "./ResultTable";
+import { TypewriterText } from "./TypewriterText";
+import { MarkdownText } from "./MarkdownText";
 
 const CHART_INTENT_RE = /\b(plot|chart|graph|visuali[sz]e|bar chart|pie chart|line chart|show.*graph|distribution|breakdown|compare|versus|vs\.?)\b/i;
 const EXPLAIN_RE = /\b(explain|describe|what (is|does|are)|tell me (about|more)|summarize|summary|meaning|interpret|analyse|analyze)\b/i;
@@ -75,6 +77,20 @@ function tableToChart(columns, rows, question) {
   return { type: "chart", chart_type: chartType, labels, values, answer: null };
 }
 
+// Streams text word-by-word, then renders full markdown once done
+function StreamedText({ text }) {
+  const [done, setDone] = useState(false);
+  if (!text) return null;
+  if (done) return <MarkdownText text={text} />;
+  return (
+    <span style={{ whiteSpace: "pre-wrap", fontSize: "13.5px", color: "#1e293b", lineHeight: "1.7" }}>
+      <TypewriterText text={text} onDone={() => setDone(true)} />
+      <span style={{ display: "inline-block", width: "2px", height: "14px", background: "#0d3347", marginLeft: "2px", verticalAlign: "middle", animation: "blink 0.8s step-end infinite" }} />
+      <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
+    </span>
+  );
+}
+
 export function BotMessage({ msg }) {
   let resolvedMsg = msg;
 
@@ -114,7 +130,7 @@ export function BotMessage({ msg }) {
   }
 
   if (!data) {
-    return <span style={{ whiteSpace: "pre-wrap" }}>{text || ""}</span>;
+    return <StreamedText text={text || ""} />;
   }
 
   const isChartQuery = originalQuery && CHART_INTENT_RE.test(originalQuery) && !EXPLAIN_RE.test(originalQuery);
@@ -140,7 +156,7 @@ export function BotMessage({ msg }) {
   if (data.type === "chart") {
     // If user asked to explain/describe, show the answer as text instead of re-rendering a chart
     if (originalQuery && EXPLAIN_RE.test(originalQuery)) {
-      return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || "Here is the explanation."}</span>;
+      return <StreamedText text={data.answer || "Here is the explanation."} />;
     }
     return <ChartRenderer data={data} />;
   }
@@ -165,7 +181,7 @@ export function BotMessage({ msg }) {
     if (parsed) return <ChartRenderer data={parsed} />;
   }
 
-  return <span style={{ whiteSpace: "pre-wrap" }}>{answer || "No relevant data found."}</span>;
+  return <StreamedText text={answer || "No relevant data found."} />;
 }
 
 export default BotMessage;
