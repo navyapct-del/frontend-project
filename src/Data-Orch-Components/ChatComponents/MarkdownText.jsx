@@ -44,10 +44,10 @@ export function MarkdownText({ text = "" }) {
       flushList();
       elements.push(<h3 key={key++} style={{ fontSize: "14px", fontWeight: "700", color: "#0f172a", margin: "14px 0 4px" }}>{line.replace(/^##\s+/, "")}</h3>);
     } else if (/^[-*]\s+/.test(line)) {
-      numItems.length && flushList();
+      if (numItems.length) flushList();
       listItems.push(line.replace(/^[-*]\s+/, ""));
     } else if (/^\d+\.\s+/.test(line)) {
-      listItems.length && flushList();
+      if (listItems.length) flushList();
       numItems.push(line.replace(/^\d+\.\s+/, ""));
     } else if (line.trim() === "") {
       flushList();
