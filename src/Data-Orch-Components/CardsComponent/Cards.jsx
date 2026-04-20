@@ -102,18 +102,24 @@ const truncate = (str, n = 16) =>
 
 // ── Card component ───────────────────────────────────────────────────────────
 
-const Cards = (props) => {
-  const [showDetail, setShowDetail] = useState(false);
-  const [downloading, setDownloading] = useState(false);
+const PREVIEWABLE = new Set(["pdf", "jpg", "jpeg", "png", "gif", "webp", "svg", "txt", "md"]);
 
-  const filename   = props.name   || "Unknown file";
-  const blobUrl    = props.blobUrl || "";
-  const docId      = props.docId  || "";
-  const ext        = getExt(filename);
-  const shortName  = truncate(filename.split("/").pop(), 16);
-  const dateStr    = formatDate(props.objdate);
-  const tags       = (props.tags || "").replace(/[{}'[\]]/g, "");
-  const desc       = props.description || "";
+const Cards = (props) => {
+  const [showDetail, setShowDetail]   = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const [previewing, setPreviewing]   = useState(false);
+  const [previewUrl, setPreviewUrl]   = useState(null);
+
+  const filename  = props.name   || "Unknown file";
+  const docId     = props.docId  || "";
+  const ext       = getExt(filename);
+  const shortName = truncate(filename.split("/").pop(), 16);
+  const dateStr   = formatDate(props.objdate);
+  const tags      = (props.tags || "").replace(/[{}'[\]]/g, "");
+  const desc      = props.description || "";
+
+  const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
+  const fileEndpoint   = `${AZURE_BASE_URL}/file?id=${docId}`;
 
   const handleDownload = async (e) => {
     e.preventDefault();
@@ -121,55 +127,67 @@ const Cards = (props) => {
     if (!docId) return;
     setDownloading(true);
     try {
-      // Use the /file?id= endpoint which proxies the private blob
-      const { downloadDocument: dl } = await import("../../config/AzureApi");
-      const { file_url, filename: fname } = await dl(docId);
-      const a = document.createElement("a");
-      a.href = file_url;
-      a.download = fname || filename;
-      a.target = "_blank";
+      const res = await fetch(fileEndpoint);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = filename.split("/").pop();
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
     } catch (err) {
       alert(`Download failed: ${err.message}`);
     }
     setDownloading(false);
   };
 
+  const handlePreview = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!docId) return;
+    if (!PREVIEWABLE.has(ext)) {
+      window.open(fileEndpoint, "_blank", "noopener,noreferrer");
+      return;
+    }
+    setPreviewing(true);
+    try {
+      const res  = await fetch(fileEndpoint);
+      if (!res.ok) throw new Error(`Server returned ${res.status}`);
+      const blob = await res.blob();
+      const url  = URL.createObjectURL(blob);
+      setPreviewUrl(url);
+    } catch (err) {
+      alert(`Preview failed: ${err.message}`);
+      setPreviewing(false);
+    }
+  };
+
+  const closePreview = () => {
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    setPreviewUrl(null);
+    setPreviewing(false);
+  };
+
   return (
     <>
       {/* ── Card tile ── */}
-      <div
-        style={s.card}
-        onClick={() => setShowDetail(true)}
-        title={filename}
-      >
-        {/* Thumbnail — always use icon (blob URLs are private) */}
-        <div style={s.thumb}>
-          <FileIconComponent ext={ext} size={44} />
-        </div>
-
-        {/* Name */}
+      <div style={s.card} onClick={() => setShowDetail(true)} title={filename}>
+        <div style={s.thumb}><FileIconComponent ext={ext} size={44} /></div>
         <div style={s.name}>{shortName}</div>
-
-        {/* Date */}
         {dateStr && <div style={s.date}>{dateStr}</div>}
-
-        {/* Extension badge */}
         <span style={s.badge}>{ext.toUpperCase()}</span>
       </div>
 
-      {/* ── Detail panel (click to open) ── */}
+      {/* ── Detail panel ── */}
       {showDetail && (
         <div style={s.overlay} onClick={() => setShowDetail(false)}>
           <div style={s.panel} onClick={(e) => e.stopPropagation()}>
-            <button style={s.closeBtn} onClick={() => setShowDetail(false)}>✕</button>
+            <button style={s.closeBtn} onClick={() => setShowDetail(false)} aria-label="Close">✕</button>
 
-            <div style={s.panelThumb}>
-              <FileIconComponent ext={ext} size={80} />
-            </div>
-
+            <div style={s.panelThumb}><FileIconComponent ext={ext} size={72} /></div>
             <h3 style={s.panelTitle}>{filename.split("/").pop()}</h3>
 
             {dateStr    && <p style={s.meta}><b>Date:</b> {dateStr}</p>}
@@ -178,14 +196,53 @@ const Cards = (props) => {
             {props.size && <p style={s.meta}><b>Size:</b> {props.size}</p>}
 
             {docId && (
-              <button
-                onClick={handleDownload}
-                disabled={downloading}
-                style={s.openBtn}
-              >
-                {downloading ? "Downloading…" : "Download"}
-              </button>
+              <div style={s.actionRow}>
+                <button onClick={handlePreview} disabled={previewing} style={s.previewBtn} aria-label="Preview file">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  {previewing && !previewUrl ? "Loading…" : "Preview"}
+                </button>
+                <button onClick={handleDownload} disabled={downloading} style={s.downloadBtn} aria-label="Download file">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  {downloading ? "Downloading…" : "Download"}
+                </button>
+              </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Preview modal ── */}
+      {previewUrl && (
+        <div style={s.overlay} onClick={closePreview}>
+          <div style={s.previewModal} onClick={(e) => e.stopPropagation()}>
+            <div style={s.previewHeader}>
+              <span style={{ fontWeight: 600, fontSize: "13px", color: "#1f2937", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {filename.split("/").pop()}
+              </span>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button onClick={handleDownload} style={s.previewHeaderBtn} aria-label="Download">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                    <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                </button>
+                <button onClick={closePreview} style={s.previewHeaderBtn} aria-label="Close preview">✕</button>
+              </div>
+            </div>
+            <div style={s.previewBody}>
+              {["jpg","jpeg","png","gif","webp","svg"].includes(ext) ? (
+                <img src={previewUrl} alt={filename} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+              ) : ext === "pdf" ? (
+                <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none" }} />
+              ) : (
+                <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -311,6 +368,83 @@ const s = {
     fontSize:       "13px",
     fontWeight:     "600",
     textDecoration: "none",
+    border:         "none",
+    cursor:         "pointer",
+  },
+  actionRow: {
+    display:   "flex",
+    gap:       "10px",
+    marginTop: "18px",
+  },
+  previewBtn: {
+    flex:           1,
+    display:        "flex",
+    alignItems:     "center",
+    justifyContent: "center",
+    gap:            "6px",
+    padding:        "10px 16px",
+    background:     "#f0f9ff",
+    color:          "#0369a1",
+    border:         "1.5px solid #bae6fd",
+    borderRadius:   "8px",
+    fontSize:       "13px",
+    fontWeight:     "600",
+    cursor:         "pointer",
+  },
+  downloadBtn: {
+    flex:           1,
+    display:        "flex",
+    alignItems:     "center",
+    justifyContent: "center",
+    gap:            "6px",
+    padding:        "10px 16px",
+    background:     "#0d3347",
+    color:          "#ffffff",
+    border:         "none",
+    borderRadius:   "8px",
+    fontSize:       "13px",
+    fontWeight:     "600",
+    cursor:         "pointer",
+  },
+  previewModal: {
+    background:    "#1f2937",
+    borderRadius:  "12px",
+    width:         "90vw",
+    maxWidth:      "960px",
+    height:        "85vh",
+    display:       "flex",
+    flexDirection: "column",
+    overflow:      "hidden",
+    boxShadow:     "0 25px 80px rgba(0,0,0,0.5)",
+  },
+  previewHeader: {
+    display:        "flex",
+    alignItems:     "center",
+    justifyContent: "space-between",
+    padding:        "10px 16px",
+    background:     "#111827",
+    borderBottom:   "1px solid #374151",
+  },
+  previewHeaderBtn: {
+    display:        "flex",
+    alignItems:     "center",
+    justifyContent: "center",
+    width:          "30px",
+    height:         "30px",
+    background:     "#374151",
+    border:         "none",
+    borderRadius:   "6px",
+    color:          "#d1d5db",
+    cursor:         "pointer",
+    fontSize:       "13px",
+  },
+  previewBody: {
+    flex:       1,
+    overflow:   "hidden",
+    background: "#f9fafb",
+    display:    "flex",
+    alignItems: "center",
+    justifyContent: "center",
   },
 };
 
