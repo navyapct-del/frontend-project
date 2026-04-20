@@ -1,349 +1,278 @@
-import React, { useState } from "react";
-
+import React, { useState, useEffect, useRef } from "react";
+import { v4 as uuidv4 } from "uuid";
 import { LoadingIcon, Lucide } from "@/base-components";
 
-const bucketName = "data-symphony-upload-v1";
+const BASE_URL = import.meta.env.VITE_AZURE_API_URL || "";
 
 const ChatInfoSage = () => {
-  const [file, setFile] = useState(null);
-  const [error, setError] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
-  const [isFileUploaded, setIsFileUploaded] = useState(false);
+  const [sessionId] = useState(() => uuidv4());
   const [userInput, setUserInput] = useState("");
   const [messages, setMessages] = useState([]);
-  const [showWelcomeMessage, setShowWelcomeMessage] = useState(true);
-  const [hideFileInput, sethideFileInput] = useState(false);
-  const [showTextInput, setShowTextInput] = useState(true);
   const [isResponseLoading, setIsResponseLoading] = useState(false);
+  const [imageId, setImageId] = useState(null);
+  const [imageUrl, setImageUrl] = useState("");
+  const [showUpload, setShowUpload] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
+  const messagesEndRef = useRef(null);
 
-  const handleFileChange = (event) => {
-    const selectedFile = event.target.files[0];
-    if (selectedFile) {
-      const validTypes = ["image/jpeg", "image/png"];
-      if (validTypes.includes(selectedFile.type)) {
-        setFile(selectedFile);
-        setError("");
-      } else {
-        setError("Invalid file type. Please select a JPEG or PNG image.");
-        setFile(null);
-      }
-    }
-  };
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const handleFileUpload = () => {
-    if (!file) return;
+  // ── Send query ──────────────────────────────────────────────────────────
+  const handleSend = async () => {
+    const q = userInput.trim();
+    if (!q) return;
 
-    const params = {
-      Bucket: bucketName,
-      Key: file.name,
-      Body: file,
-      ContentType: file.type,
-    };
-
-    fetch(
-      "https://689xmudpbk.execute-api.ap-south-1.amazonaws.com/dev/",
-      // "https://vaoxonpvci.execute-api.ap-south-1.amazonaws.com/dev",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          key: file.name,
-        }),
-      }
-    )
-      .then((response) => response.json())
-      .then((presignedUrl) => {
-        fetch(presignedUrl, {
-          method: "PUT",
-          body: file,
-        })
-          .then((response) => {
-            let fileLocation =
-              "https://data-symphony-upload-v1.s3.ap-south-1.amazonaws.com/" +
-              file.name;
-            console.log("Image URL:", fileLocation);
-            setImageUrl(fileLocation);
-            setIsFileUploaded(true);
-            setShowWelcomeMessage(false);
-            setShowTextInput(true);
-            sethideFileInput(false);
-            setMessages([]);
-          })
-          .catch((error) => {
-            console.error("Error uploading file:", error);
-            setError("Error uploading file. Please try again.");
-          });
-      })
-      .catch((error) => {
-        console.error("Error uploading file:", error);
-        setError("Error uploading file. Please try again.");
-      });
-  };
-
-  const handleSendPrompt = () => {
-    if (!userInput || !imageUrl) return;
-    setMessages((prevMessages) => [
-      ...prevMessages,
-      { type: "user", text: userInput },
-    ]);
+    setMessages((prev) => [...prev, { type: "user", text: q }]);
     setUserInput("");
     setIsResponseLoading(true);
 
-    // const removeSpaces = (url) => url.replace(/\s+/g, '');
-
-    const s3Url = `s3://${bucketName}/${file.name}`;
-
-    const payload = {
-      prompt: userInput,
-      s3_key: s3Url,
-      action: "prompt",
-    };
-
-    fetch(
-      "https://z5y127dmhh.execute-api.ap-south-1.amazonaws.com/Dev/data_symphony",
-      // "https://439e29xijf.execute-api.ap-south-1.amazonaws.com/Dev/data_symphony",
-      {
+    try {
+      const res = await fetch(`${BASE_URL}/agent/query`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        setIsResponseLoading(false);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          {
-            type: "system",
-            text: data.Response,
-            uid: data.UID,
-          },
-        ]);
-      })
-      .catch((error) => {
-        setIsResponseLoading(false);
-        console.error("Error sending prompt to backend:", error);
-        setMessages((prevMessages) => [
-          ...prevMessages,
-          { type: "system", text: "Error sending prompt to backend." },
-        ]);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q,
+          session_id: sessionId,
+          ...(imageId ? { image_id: imageId } : {}),
+        }),
       });
+
+      if (!res.ok) {
+        setMessages((prev) => [...prev, {
+          type: "system",
+          text: `Error ${res.status} — please try again.`,
+        }]);
+        return;
+      }
+
+      const data = await res.json();
+      setMessages((prev) => [...prev, buildMessage(data)]);
+    } catch (e) {
+      setMessages((prev) => [...prev, {
+        type: "system",
+        text: "Could not reach the server. Check your connection.",
+      }]);
+    } finally {
+      setIsResponseLoading(false);
+    }
   };
 
-  const handlePaperclipClick = () => {
-    sethideFileInput(true);
-    setShowTextInput(false);
-  };
+  // ── Upload image (optional) ─────────────────────────────────────────────
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const handleThumbsUp = (index) => {
-    const uid = messages[index]?.uid;
-    sendThumbsResponse(index, true, false, uid);
-  };
+    const valid = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+    if (!valid.includes(file.type)) {
+      setUploadError("Only JPEG, PNG, WEBP or GIF allowed.");
+      return;
+    }
 
-  const handleThumbsDown = (index) => {
-    const uid = messages[index]?.uid;
-    sendThumbsResponse(index, false, true, uid);
-  };
+    setUploadError("");
+    setIsUploading(true);
 
-  const sendThumbsResponse = (index, like, dislike, uid) => {
-    const payload = {
-      action: "feedback",
-      UID: uid,
-      Like: like,
-      Dislike: dislike,
-    };
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("filename", file.name);
+    formData.append("temp", "true");
+    formData.append("session_id", sessionId);
 
-    fetch(
-      "https://z5y127dmhh.execute-api.ap-south-1.amazonaws.com/Dev/data_symphony",
-      // "https://439e29xijf.execute-api.ap-south-1.amazonaws.com/Dev/data_symphony",
-      {
+    try {
+      const res = await fetch(`${BASE_URL}/upload`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      }
-    )
-      .then((response) => response.json())
-      .then((data) => {
-        const updatedMessages = [...messages];
-        updatedMessages[index] = {
-          ...updatedMessages[index],
-          liked: like,
-          disliked: dislike,
-        };
-        setMessages(updatedMessages);
-      })
-      .catch((error) => {
-        console.error("Error sending reaction to backend:", error);
+        body: formData,
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        setUploadError(err.error || "Upload failed.");
+        return;
+      }
+      const data = await res.json();
+      setImageId(data.id);
+      setImageUrl(URL.createObjectURL(file));
+      setShowUpload(false);
+      setMessages((prev) => [...prev, {
+        type: "system",
+        text: `Image "${file.name}" uploaded. You can now ask questions about it.`,
+      }]);
+    } catch {
+      setUploadError("Upload failed. Try again.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
+  // ── Build message from structured response ──────────────────────────────
+  const buildMessage = (data) => {
+    const type = data.type || "text";
+    if (type === "image") {
+      return { type: "system", responseType: "image", images: data.data || [] };
+    }
+    if (type === "chart") {
+      return { type: "system", responseType: "chart", chartData: data.data };
+    }
+    if (type === "table") {
+      return { type: "system", responseType: "table", tableData: data.data };
+    }
+    const raw = data.data;
+    const text = typeof raw === "string"
+      ? raw
+      : raw?.answer || raw?.text || JSON.stringify(raw);
+    return { type: "system", text };
+  };
+
+  const handleReset = () => {
+    setMessages([]);
+    setUserInput("");
+    setImageId(null);
+    setImageUrl("");
+    setShowUpload(false);
+    setUploadError("");
+  };
+
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="relative">
-      <div className="fixed right-8 md:right-12 bottom-24 w-[280px] md:w-[350px] bg-white rounded-lg shadow-lg opacity-100 scale-100 transition-all duration-100">
-        <header className="relative flex items-center justify-start h-12 p-2 bg-cyan-900 rounded-t-lg shadow-md">
-          <Lucide
-            icon="Bot"
-            className="w-5 h-5 mr-2 text-white xl:w-6 xl:h-6 lg:w-8 lg:h-8 md:w-6 md:h-6"
-          />
-          <h2 className="text-[15px] font-medium text-white">Ask The Sage</h2>
+      <div className="fixed right-8 md:right-12 bottom-24 w-[300px] md:w-[370px] bg-white rounded-lg shadow-lg">
+
+        {/* Header */}
+        <header className="flex items-center h-12 px-3 bg-cyan-900 rounded-t-lg">
+          <Lucide icon="Bot" className="w-5 h-5 mr-2 text-white" />
+          <h2 className="text-[15px] font-medium text-white flex-1">Ask The Sage</h2>
+          {imageId && (
+            <span className="text-xs text-cyan-200 flex items-center gap-1">
+              <Lucide icon="Image" className="w-3 h-3" /> Image ready
+            </span>
+          )}
         </header>
 
-        <ul className="p-4">
-          <div className="flex justify-end">
-            {showWelcomeMessage && (
-              <>
-                <Lucide
-                  icon="Bot"
-                  className="w-5 h-5 mr-2 text-cyan-900 xl:w-6 xl:h-12 lg:w-8 lg:h-8 md:w-6 md:h-6"
-                />
-                <li className="flex justify-end p-2 mt-2 bg-gray-100 rounded-lg">
-                  <span className="text-cyan-900">
-                    Welcome! Please upload an image to start.
-                  </span>
-                </li>
-              </>
-            )}
-          </div>
-          {console.log("image url", imageUrl)}
-          <div className="flex justify-center">
-            {imageUrl && (
-              <li className="flex justify-center p-2 mt-2 bg-gray-100 rounded-lg">
-                <img
-                  src={imageUrl}
-                  alt="Uploaded"
-                  className="object-cover w-auto h-24 p-1 rounded-lg"
-                />
-              </li>
-            )}
-          </div>
-          <div
-            className={`flex flex-col h-72 overflow-y-auto p-4 mt-4 mb-1 rounded-lg ${
-              messages.length > 0 ? "bg-gray-100" : ""
-            }`}
-          >
-            <div className="relative flex flex-col">
-              {messages.map((message, index) => (
-                <div
-                  key={index}
-                  className="relative flex flex-col items-start p-2"
-                >
-                  <div
-                    className={`relative flex items-start p-2 my-1 ${
-                      message.type === "user"
-                        ? "self-end bg-cyan-900 px-2 text-[14px] rounded-md max-w-[100%] py-2 text-white"
-                        : "self-start bg-gray-200 px-2 text-[14px] rounded-md max-w-[100%] py-2 ml-5 text-cyan-900"
-                    }`}
-                  >
-                    {message.type !== "user" && (
-                      <Lucide
-                        icon="Bot"
-                        className="absolute left-[-2rem] w-5 h-10 text-cyan-900 xl:w-6 xl:h-10 lg:w-8 lg:h-8 md:w-6 md:h-6"
-                      />
-                    )}
-                    <span>{message.text}</span>
-                  </div>
-                  {message.type !== "user" && !isResponseLoading && (
-                    <div className="flex justify-end w-full mt-2 ">
-                      <Lucide
-                        icon="ThumbsUp"
-                        className={`w-5 h-5 cursor-pointer ${
-                          message.liked
-                            ? "text-green-500"
-                            : "text-gray-500 hover:text-cyan-900"
-                        }`}
-                        onClick={() => handleThumbsUp(index)}
-                      />
-                      <Lucide
-                        icon="ThumbsDown"
-                        className={`w-5 h-5 ml-2 cursor-pointer ${
-                          message.disliked
-                            ? "text-red-500"
-                            : "text-gray-500 hover:text-cyan-900"
-                        }`}
-                        onClick={() => handleThumbsDown(index)}
-                      />
+        {/* Messages */}
+        <div className="h-80 overflow-y-auto p-3 space-y-2 bg-gray-50">
+          {messages.length === 0 && (
+            <div className="flex items-start gap-2 mt-2">
+              <Lucide icon="Bot" className="w-5 h-5 text-cyan-900 mt-1 shrink-0" />
+              <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-cyan-900">
+                Hi! Ask me anything — search images, query documents, or upload an image to analyse it.
+                <div className="mt-2 text-xs text-gray-400 space-y-1">
+                  <div>💡 <em>show images of turbine failure</em></div>
+                  <div>💡 <em>what are the key risks in the report?</em></div>
+                  <div>💡 <em>who is Elon Musk?</em></div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.type === "user" ? "justify-end" : "justify-start items-start gap-2"}`}>
+              {msg.type !== "user" && (
+                <Lucide icon="Bot" className="w-5 h-5 text-cyan-900 mt-1 shrink-0" />
+              )}
+
+              {msg.type === "user" ? (
+                <div className="bg-cyan-900 text-white text-sm rounded-lg px-3 py-2 max-w-[85%]">
+                  {msg.text}
+                </div>
+
+              ) : msg.responseType === "image" ? (
+                <div className="bg-white border border-gray-200 rounded-lg p-2 max-w-[85%]">
+                  {(msg.images || []).length === 0 ? (
+                    <p className="text-sm text-gray-500">No images found.</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-1">
+                      {msg.images.map((img, j) => (
+                        <a key={j} href={img.url} target="_blank" rel="noopener noreferrer">
+                          <img src={img.thumbnail} alt={img.name}
+                            className="w-full h-20 object-cover rounded hover:opacity-80" />
+                        </a>
+                      ))}
                     </div>
                   )}
                 </div>
-              ))}
-              {isResponseLoading && (
-                <div className="relative flex items-center justify-start p-2 my-2 ml-5">
-                  <LoadingIcon icon="three-dots" className="w-8 h-8" />
+
+              ) : msg.responseType === "chart" || msg.responseType === "table" ? (
+                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-cyan-900 max-w-[85%]">
+                  <pre className="text-xs whitespace-pre-wrap overflow-auto max-h-40">
+                    {JSON.stringify(msg.chartData || msg.tableData, null, 2)}
+                  </pre>
+                </div>
+
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-800 max-w-[85%]">
+                  {msg.text}
                 </div>
               )}
             </div>
-          </div>
-        </ul>
+          ))}
 
-        <div className="flex flex-col items-center p-2 border-t border-gray-200">
-          {error && <p className="mb-2 text-red-600">{error}</p>}
-          <div className="flex items-center w-full">
-            {!isFileUploaded && (
-              <>
-                <input
-                  type="file"
-                  accept=".jpg,.jpeg,.png"
-                  onChange={handleFileChange}
-                  className="flex-grow p-2 mr-2 border border-gray-300 rounded-lg"
-                />
-                <button
-                  onClick={handleFileUpload}
-                  className="inline-block btn btn-primary"
-                >
-                  <Lucide icon="Upload" className="w-5 h-5 text-white" />
-                </button>
-              </>
-            )}
-            {isFileUploaded && (
-              <>
-                {showTextInput && !hideFileInput && (
-                  <>
-                    <input
-                      type="text"
-                      value={userInput}
-                      onChange={(e) => setUserInput(e.target.value)}
-                      className="block px-2 py-2 mr-2 login__input form-control"
-                      placeholder="Enter your message ..."
-                    />
-
-                    <button
-                      className="inline-block mr-2 btn btn-primary"
-                      onClick={handleSendPrompt}
-                    >
-                      <Lucide icon="Send" className="w-5 h-5 text-white" />
-                    </button>
-
-                    <button
-                      onClick={handlePaperclipClick}
-                      className="inline-block btn btn-primary"
-                    >
-                      <Lucide icon="Paperclip" className="w-5 h-5 text-white" />
-                    </button>
-                  </>
-                )}
-                {hideFileInput && (
-                  <>
-                    <input
-                      type="file"
-                      accept=".jpg,.jpeg,.png"
-                      onChange={handleFileChange}
-                      className="flex-grow p-2 mr-2 border border-gray-300 rounded-lg"
-                    />
-                    <button
-                      onClick={handleFileUpload}
-                      className="inline-block btn btn-primary"
-                    >
-                      <Lucide icon="Upload" className="w-5 h-5 text-white" />
-                    </button>
-                  </>
-                )}
-              </>
-            )}
-          </div>
+          {isResponseLoading && (
+            <div className="flex items-start gap-2">
+              <Lucide icon="Bot" className="w-5 h-5 text-cyan-900 mt-1 shrink-0" />
+              <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
+                <LoadingIcon icon="three-dots" className="w-8 h-5" />
+              </div>
+            </div>
+          )}
+          <div ref={messagesEndRef} />
         </div>
+
+        {/* Image preview strip */}
+        {imageUrl && (
+          <div className="flex items-center gap-2 px-3 py-1 bg-cyan-50 border-t border-cyan-100">
+            <img src={imageUrl} alt="uploaded" className="h-8 w-8 object-cover rounded" />
+            <span className="text-xs text-cyan-800 flex-1 truncate">Image attached</span>
+            <button onClick={() => { setImageId(null); setImageUrl(""); }}
+              className="text-xs text-red-400 hover:text-red-600">✕</button>
+          </div>
+        )}
+
+        {/* Upload panel (shown when paperclip clicked) */}
+        {showUpload && (
+          <div className="px-3 py-2 bg-gray-50 border-t border-gray-200">
+            <p className="text-xs text-gray-500 mb-1">Upload an image to ask questions about it:</p>
+            <input type="file" accept=".jpg,.jpeg,.png,.webp,.gif"
+              onChange={handleFileChange}
+              className="text-xs w-full border border-gray-300 rounded p-1" />
+            {uploadError && <p className="text-xs text-red-500 mt-1">{uploadError}</p>}
+            {isUploading && <p className="text-xs text-cyan-600 mt-1">Uploading...</p>}
+          </div>
+        )}
+
+        {/* Input bar */}
+        <div className="flex items-center gap-1 p-2 border-t border-gray-200">
+          {/* Paperclip — toggle image upload */}
+          <button onClick={() => setShowUpload((v) => !v)}
+            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-500"
+            title="Attach image">
+            <Lucide icon="Paperclip" className="w-4 h-4" />
+          </button>
+
+          {/* Text input */}
+          <input
+            type="text"
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder="Ask anything..."
+            className="flex-1 text-sm border border-gray-300 rounded-full px-3 py-1.5 focus:outline-none focus:border-cyan-500"
+          />
+
+          {/* Send */}
+          <button onClick={handleSend} disabled={!userInput.trim() || isResponseLoading}
+            className="p-1.5 rounded-full bg-cyan-900 hover:bg-cyan-700 disabled:opacity-40">
+            <Lucide icon="Send" className="w-4 h-4 text-white" />
+          </button>
+
+          {/* Reset */}
+          <button onClick={handleReset}
+            className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400"
+            title="Clear chat">
+            <Lucide icon="RotateCcw" className="w-4 h-4" />
+          </button>
+        </div>
+
       </div>
     </div>
   );
