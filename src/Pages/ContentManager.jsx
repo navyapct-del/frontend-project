@@ -11,6 +11,28 @@ import AdvanceSearch from "../Data-Orch-Components/AdvanceSearchComponent/Advanc
 import CheckboxesFilter from "../Data-Orch-Components/CheckboxesFilter";
 import TabulatorFile from "../Data-Orch-Components/TabulatorFile";
 
+const EXT_MAP = {
+  pdf: "pdf", doc: "word", docx: "word",
+  csv: "csv", xls: "excel", xlsx: "excel", txt: "txt",
+};
+function getFileType(filename = "") {
+  const ext = filename.split(".").pop().toLowerCase();
+  return EXT_MAP[ext] || "other";
+}
+
+const FILE_TYPE_LABELS = [
+  { key: "all",   label: "All",   icon: "M3 3h7v7H3zm11 0h7v7h-7zM3 14h7v7H3zm11 0h7v7h-7z" },
+  { key: "pdf",   label: "PDF",   icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
+  { key: "word",  label: "Word",  icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
+  { key: "csv",   label: "CSV",   icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
+  { key: "excel", label: "Excel", icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
+  { key: "txt",   label: "TXT",   icon: "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" },
+];
+
+const TYPE_COLORS = {
+  pdf: "#e53e3e", word: "#3182ce", csv: "#38a169", excel: "#2f855a", txt: "#718096", other: "#a0aec0",
+};
+
 export default function ContentManager(props) {
   const [currentPage, setCurrentPage]     = useState(0);
   const [objectsPerPage]                  = useState(10);
@@ -30,6 +52,7 @@ export default function ContentManager(props) {
   const [showTabulator, setShowTabulator] = useState(false);
   const [viewMode, setViewMode]           = useState("grid"); // "grid" | "list"
   const [sidebarDoc, setSidebarDoc]       = useState(""); // selected doc name for sidebar filter
+  const [selectedFileType, setSelectedFileType] = useState("all");
 
   const loadDocuments = useCallback(() => {
     setLoading(true);
@@ -45,7 +68,7 @@ export default function ContentManager(props) {
               date:        d.created_at || d.timestamp || new Date().toISOString(),
               size:        d.size || "",
               blob_url:    d.blob_url || "",
-              file_type:   "document",
+              file_type:   getFileType(d.filename),
             }))
           : [];
         console.log("[ContentManager] normalized docs:", normalized.length);
@@ -79,9 +102,11 @@ export default function ContentManager(props) {
   useEffect(() => {
     if (selectedTags.length > 0)
       setFilteredData(allData.filter((item) => selectedTags.some((tag) => item.tags.includes(tag))));
+    else if (selectedFileType !== "all")
+      setFilteredData(allData.filter(d => d.file_type === selectedFileType));
     else
       setFilteredData(allData);
-  }, [allData, selectedTags]);
+  }, [allData, selectedTags, selectedFileType]);
 
   useEffect(() => {
     let filtered = allData;
@@ -128,60 +153,39 @@ export default function ContentManager(props) {
   return (
     <div style={{ display: "flex", gap: "16px", alignItems: "flex-start" }}>
 
-      {/* ── Documents sidebar ── */}
+      {/* ── File-type filter sidebar ── */}
       <div style={sd.sidebar}>
         <div style={sd.sidebarHeader}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0d3347" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
           </svg>
-          <span style={sd.sidebarTitle}>Documents</span>
+          <span style={sd.sidebarTitle}>File Types</span>
         </div>
         <div style={sd.sidebarList}>
-          {/* All */}
-          <div
-            style={{ ...sd.docItem, background: sidebarDoc === "" ? "#dbeafe" : "transparent" }}
-            onClick={() => { setSidebarDoc(""); setFilteredData(allData); }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={sidebarDoc === "" ? "#0d3347" : "#9ca3af"} strokeWidth="2">
-              <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-              <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-            </svg>
-            <span style={{ ...sd.docName, color: sidebarDoc === "" ? "#0d3347" : "#6b7280", fontWeight: sidebarDoc === "" ? "600" : "400" }}>
-              All Documents
-            </span>
-          </div>
-
-          {allData.length === 0 ? (
-            <p style={{ fontSize: "11px", color: "#9ca3af", padding: "10px 14px", textAlign: "center" }}>No files yet</p>
-          ) : (
-            allData.map((doc) => {
-              const isActive = sidebarDoc === doc.name;
-              return (
-                <div
-                  key={doc.id}
-                  style={{ ...sd.docItem, background: isActive ? "#dbeafe" : "transparent" }}
-                  title={doc.name}
-                  onClick={() => {
-                    if (isActive) {
-                      setSidebarDoc("");
-                      setFilteredData(allData);
-                    } else {
-                      setSidebarDoc(doc.name);
-                      setFilteredData(allData.filter(d => d.name === doc.name));
-                    }
-                  }}
-                >
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={isActive ? "#0d3347" : "#9ca3af"} strokeWidth="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14 2 14 8 20 8"/>
-                  </svg>
-                  <span style={{ ...sd.docName, color: isActive ? "#0d3347" : "#374151", fontWeight: isActive ? "600" : "400" }}>
-                    {doc.name}
-                  </span>
-                </div>
-              );
-            })
-          )}
+          {FILE_TYPE_LABELS.map(({ key, label }) => {
+            const count = key === "all" ? allData.length : allData.filter(d => d.file_type === key).length;
+            const isActive = selectedFileType === key;
+            const color = key === "all" ? "#0d3347" : TYPE_COLORS[key];
+            return (
+              <div
+                key={key}
+                style={{ ...sd.docItem, background: isActive ? "#dbeafe" : "transparent" }}
+                onClick={() => {
+                  setSelectedFileType(key);
+                  setFilteredData(key === "all" ? allData : allData.filter(d => d.file_type === key));
+                  setCurrentPage(0);
+                }}
+              >
+                <span style={{ ...sd.typeDot, background: color }} />
+                <span style={{ ...sd.docName, color: isActive ? "#0d3347" : "#374151", fontWeight: isActive ? "600" : "400" }}>
+                  {label}
+                </span>
+                <span style={{ ...sd.badge, background: isActive ? "#0d3347" : "#e5e7eb", color: isActive ? "#fff" : "#6b7280" }}>
+                  {count}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -427,17 +431,28 @@ const sd = {
     display: "flex",
     alignItems: "center",
     gap: "8px",
-    padding: "8px 12px",
+    padding: "9px 14px",
     cursor: "pointer",
-    transition: "background 0.1s",
+    transition: "background 0.15s",
     borderBottom: "1px solid #e0f2fe",
   },
   docName: {
-    fontSize: "11px",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
+    fontSize: "12px",
     flex: 1,
+  },
+  typeDot: {
+    width: "9px",
+    height: "9px",
+    borderRadius: "50%",
+    flexShrink: 0,
+  },
+  badge: {
+    fontSize: "11px",
+    fontWeight: "600",
+    padding: "1px 7px",
+    borderRadius: "10px",
+    minWidth: "22px",
+    textAlign: "center",
   },
 };
 
