@@ -110,8 +110,9 @@ const Cards = (props) => {
   const [previewing, setPreviewing]   = useState(false);
   const [previewUrl, setPreviewUrl]   = useState(null);
 
-  const filename  = props.name   || "Unknown file";
-  const docId     = props.docId  || "";
+  const filename  = props.name    || "Unknown file";
+  const docId     = props.docId   || "";
+  const blobUrl   = props.blobUrl || "";
   const ext       = getExt(filename);
   const shortName = truncate(filename.split("/").pop(), 16);
   const dateStr   = formatDate(props.objdate);
@@ -124,20 +125,20 @@ const Cards = (props) => {
   const handleDownload = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!docId) return;
+    const url = blobUrl || (docId ? fileEndpoint : null);
+    if (!url) return;
     setDownloading(true);
     try {
-      const res = await fetch(fileEndpoint);
+      const res = await fetch(url);
       if (!res.ok) throw new Error(`Server returned ${res.status}`);
       const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
       const a    = document.createElement("a");
-      a.href     = url;
+      a.href     = URL.createObjectURL(blob);
       a.download = filename.split("/").pop();
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 10000);
+      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
     } catch (err) {
       alert(`Download failed: ${err.message}`);
     }
@@ -147,26 +148,19 @@ const Cards = (props) => {
   const handlePreview = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (!docId) return;
+    const url = blobUrl || (docId ? fileEndpoint : null);
+    if (!url) return;
     if (!PREVIEWABLE.has(ext)) {
-      window.open(fileEndpoint, "_blank", "noopener,noreferrer");
+      // Non-previewable: open in new tab (browser will handle or download)
+      window.open(url, "_blank", "noopener,noreferrer");
       return;
     }
+    // Use blob URL directly — no fetch needed, avoids Content-Disposition:attachment
+    setPreviewUrl(url);
     setPreviewing(true);
-    try {
-      const res  = await fetch(fileEndpoint);
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      const blob = await res.blob();
-      const url  = URL.createObjectURL(blob);
-      setPreviewUrl(url);
-    } catch (err) {
-      alert(`Preview failed: ${err.message}`);
-      setPreviewing(false);
-    }
   };
 
   const closePreview = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
     setPreviewUrl(null);
     setPreviewing(false);
   };
