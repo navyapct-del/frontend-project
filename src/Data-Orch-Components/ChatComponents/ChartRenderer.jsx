@@ -167,6 +167,52 @@ function PieInsightsPanel({ labels, values }) {
 export function ChartRenderer({ data }) {
   const title = data.title || null;
 
+  // Shape C: { labels, series: { SeriesName: [values] } }
+  if (data.labels && data.series && typeof data.series === "object" && !Array.isArray(data.series)) {
+    const chartType = (data.chart_type || "bar").toLowerCase();
+    const isPie  = chartType === "pie";
+    const isLine = chartType === "line";
+    const seriesKeys = Object.keys(data.series);
+
+    const chartData = {
+      labels: data.labels,
+      datasets: isPie
+        ? [{
+            label: seriesKeys[0] || "Value",
+            data: data.series[seriesKeys[0]],
+            backgroundColor: PALETTE.slice(0, data.labels.length),
+            borderColor: "#fff",
+            borderWidth: 2,
+            hoverOffset: 10,
+          }]
+        : seriesKeys.map((key, i) => ({
+            label: key,
+            data: data.series[key],
+            backgroundColor: isLine ? PALETTE_ALPHA[i % PALETTE.length] : PALETTE[i % PALETTE.length],
+            borderColor: PALETTE[i % PALETTE.length],
+            borderWidth: isLine ? 2.5 : 0,
+            borderRadius: isLine ? 0 : 6,
+            fill: isLine,
+            pointBackgroundColor: isLine ? PALETTE[i % PALETTE.length] : undefined,
+            pointBorderColor: isLine ? "#fff" : undefined,
+          })),
+    };
+
+    const allValues = seriesKeys.flatMap(k => data.series[k]);
+
+    return (
+      <div style={wrap}>
+        {data.answer && <p style={answerStyle}>{data.answer}</p>}
+        {isPie ? <PieInsightsPanel labels={data.labels} values={allValues} /> : <InsightsPanel labels={data.labels} values={allValues} />}
+        <div style={{ height: isPie ? "320px" : "360px", position: "relative" }}>
+          {isPie  && <Pie  data={chartData} options={buildPieOptions(title)} />}
+          {isLine && <Line data={chartData} options={buildLineOptions(title)} />}
+          {!isPie && !isLine && <Bar data={chartData} options={buildBarOptions(title)} />}
+        </div>
+      </div>
+    );
+  }
+
   // Shape A: { labels, values }
   if (data.labels && data.values) {
     const chartType = (data.chart_type || "bar").toLowerCase();
