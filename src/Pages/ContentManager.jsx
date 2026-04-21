@@ -57,6 +57,7 @@ export default function ContentManager(props) {
   const [isCheckboxFilterActive, setIsCheckboxFilterActive] = useState(false);
   const [showTabulator, setShowTabulator] = useState(false);
   const [viewMode, setViewMode]           = useState("grid"); // "grid" | "list"
+  const [deleteConfirm, setDeleteConfirm] = useState({ show: false, docId: null });
   const [sidebarDoc, setSidebarDoc]       = useState(""); // selected doc name for sidebar filter
   const [selectedFileType, setSelectedFileType] = useState("all");
 
@@ -138,8 +139,13 @@ export default function ContentManager(props) {
   const handleUploadClick    = () => setShowUpload((p) => !p);
   const handleTabulatorClick = () => { setShowTabulator((p) => !p); setShowUpload(false); };
 
-  const handleDelete = useCallback(async (docId) => {
-    if (!window.confirm("Delete this document? This cannot be undone.")) return;
+  const handleDelete = useCallback((docId) => {
+    setDeleteConfirm({ show: true, docId });
+  }, []);
+
+  const confirmDelete = useCallback(async () => {
+    const docId = deleteConfirm.docId;
+    setDeleteConfirm({ show: false, docId: null });
     try {
       await deleteDocument(docId);
       setAllData((prev) => prev.filter((d) => d.id !== docId));
@@ -147,7 +153,7 @@ export default function ContentManager(props) {
     } catch (e) {
       alert(`Delete failed: ${e.message}`);
     }
-  }, []);
+  }, [deleteConfirm.docId]);
 
   const currentData = (filteredData || []).slice(indexOfFirstObject, indexOfLastObject);
 
@@ -394,6 +400,56 @@ export default function ContentManager(props) {
 
       </div>
       </div>
+
+      {/* ── Delete Confirmation Modal ── */}
+      {deleteConfirm.show && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.5)",
+          display: "flex", alignItems: "center", justifyContent: "center"
+        }}>
+          <div style={{
+            background: "#fff", borderRadius: "12px", padding: "28px 32px",
+            maxWidth: "420px", width: "90%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)"
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "12px" }}>
+              <div style={{
+                width: "40px", height: "40px", borderRadius: "50%",
+                background: "#fee2e2", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0
+              }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
+                </svg>
+              </div>
+              <h3 style={{ margin: 0, fontSize: "17px", fontWeight: 600, color: "#111" }}>Delete Document</h3>
+            </div>
+            <p style={{ margin: "0 0 24px", color: "#555", fontSize: "14px", lineHeight: 1.5 }}>
+              Are you sure you want to delete this document? This action <strong>cannot be undone</strong>.
+            </p>
+            <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setDeleteConfirm({ show: false, docId: null })}
+                style={{
+                  padding: "8px 20px", borderRadius: "8px", border: "1px solid #d1d5db",
+                  background: "#fff", color: "#374151", fontSize: "14px", cursor: "pointer", fontWeight: 500
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                style={{
+                  padding: "8px 20px", borderRadius: "8px", border: "none",
+                  background: "#dc2626", color: "#fff", fontSize: "14px", cursor: "pointer", fontWeight: 500
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
