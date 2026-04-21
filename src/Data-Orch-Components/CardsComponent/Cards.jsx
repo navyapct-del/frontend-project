@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { downloadDocument } from "../../config/AzureApi";
+import { getPreviewUrl, downloadDocument } from "../../config/AzureApi";
 import pdf_Url    from "../../assets/images/pdf.png";
 import docx_Url   from "../../assets/images/docx.png";
 import text_Url   from "../../assets/images/text.png";
@@ -112,33 +112,25 @@ const Cards = (props) => {
 
   const filename  = props.name    || "Unknown file";
   const docId     = props.docId   || "";
-  const blobUrl   = props.blobUrl || "";
   const ext       = getExt(filename);
   const shortName = truncate(filename.split("/").pop(), 16);
   const dateStr   = formatDate(props.objdate);
   const tags      = (props.tags || "").replace(/[{}'[\]]/g, "");
   const desc      = props.description || "";
 
-  const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
-  const fileEndpoint   = `${AZURE_BASE_URL}/file?id=${docId}`;
-
   const handleDownload = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const url = blobUrl || (docId ? fileEndpoint : null);
-    if (!url) return;
+    if (!docId) return;
     setDownloading(true);
     try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`Server returned ${res.status}`);
-      const blob = await res.blob();
-      const a    = document.createElement("a");
-      a.href     = URL.createObjectURL(blob);
-      a.download = filename.split("/").pop();
+      const { sas_url, filename: fname } = await downloadDocument(docId);
+      const a = document.createElement("a");
+      a.href     = sas_url;
+      a.download = fname || filename.split("/").pop();
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(a.href), 10000);
     } catch (err) {
       alert(`Download failed: ${err.message}`);
     }
@@ -148,16 +140,15 @@ const Cards = (props) => {
   const handlePreview = async (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const url = blobUrl || (docId ? fileEndpoint : null);
-    if (!url) return;
-    if (!PREVIEWABLE.has(ext)) {
-      // Non-previewable: open in new tab (browser will handle or download)
-      window.open(url, "_blank", "noopener,noreferrer");
-      return;
-    }
-    // Use blob URL directly — no fetch needed, avoids Content-Disposition:attachment
-    setPreviewUrl(url);
+    if (!docId) return;
     setPreviewing(true);
+    try {
+      const url = await getPreviewUrl(docId);
+      setPreviewUrl(url);
+    } catch (err) {
+      alert(`Preview failed: ${err.message}`);
+      setPreviewing(false);
+    }
   };
 
   const closePreview = () => {

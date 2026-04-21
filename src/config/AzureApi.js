@@ -87,13 +87,20 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 };
 
 // ─────────────────────────────────────────────
-// Download — get file via proxy endpoint
+// Download — get SAS URL for private blob
 // ─────────────────────────────────────────────
 
 export const downloadDocument = async (documentId) => {
-  console.log("[AzureApi] GET /file?id=", documentId);
-  const file_url = `${AZURE_BASE_URL}/file?id=${documentId}`;
-  return { file_url, filename: "" };
+  const res = await fetch(`${AZURE_BASE_URL}/download/${documentId}`, { headers: authHeaders });
+  if (!res.ok) throw new Error(`Failed to get download URL: ${res.status}`);
+  return res.json(); // { sas_url, filename }
+};
+
+export const getPreviewUrl = async (documentId) => {
+  const res = await fetch(`${AZURE_BASE_URL}/download/${documentId}`, { headers: authHeaders });
+  if (!res.ok) throw new Error(`Failed to get preview URL: ${res.status}`);
+  const { sas_url } = await res.json();
+  return sas_url;
 };
 
 // ─────────────────────────────────────────────
