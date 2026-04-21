@@ -187,7 +187,19 @@ function normalizeResponse(data) {
 }
 
 // ── Main chatbot ─────────────────────────────────────────────────────────────
-const SymphonyChatbot = () => {
+/**
+ * Props (all optional — existing behaviour unchanged when not provided):
+ *   sessionId       – override the auto-generated session id
+ *   userId          – override the hard-coded user email
+ *   initialMessages – pre-load messages when switching to a previous session
+ *   onMessageSaved  – () => void  called after each message is persisted
+ */
+const SymphonyChatbot = ({
+  sessionId: sessionIdProp,
+  userId: userIdProp,
+  initialMessages,
+  onMessageSaved,
+} = {}) => {
   const genId = () => `id-${Math.random().toString(36).substr(2, 9)}`;
 
   const WELCOME = {
@@ -198,9 +210,18 @@ const SymphonyChatbot = () => {
 
   const { messages, setMessages, addMessage, chatHistory, setChatHistory, clearMessages, lastTopic, setLastTopic } = useChatStore();
 
+  // When initialMessages changes (session switch), replace the message list
+  useEffect(() => {
+    if (initialMessages && initialMessages.length > 0) {
+      setMessages(initialMessages);
+    } else if (messages.length === 0) {
+      setMessages([WELCOME]);
+    }
+  }, [initialMessages]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Seed welcome message if store is empty (first visit or after clear)
   useEffect(() => {
-    if (messages.length === 0) {
+    if (!initialMessages && messages.length === 0) {
       setMessages([WELCOME]);
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -210,9 +231,9 @@ const SymphonyChatbot = () => {
   const [isListening, setIsListening]   = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText]         = useState("");
-  // Stable per-session identifiers for chat history storage
-  const [sessionId] = useState(() => crypto.randomUUID());
-  const userId      = "navya.p@cloudthat.com"; // replace with auth user if login is added
+  // Use prop sessionId if provided, otherwise generate a stable one
+  const [sessionId] = useState(() => sessionIdProp || crypto.randomUUID());
+  const userId      = userIdProp || "navya.p@cloudthat.com"; // replace with auth user if login is added
   const [voiceSupported]                = useState(
     () => "webkitSpeechRecognition" in window || "SpeechRecognition" in window
   );
@@ -297,7 +318,9 @@ const SymphonyChatbot = () => {
       const newHistory = [...updatedHistory, { role: "assistant", content: assistantContent }];
       setChatHistory(newHistory.slice(-20));
       // Save assistant message to storage (fire-and-forget)
-      saveMessage(userId, sessionId, assistantContent, "assistant").catch(e => console.warn("[saveMessage] assistant:", e.message));
+      saveMessage(userId, sessionId, assistantContent, "assistant")
+        .then(() => { if (onMessageSaved) onMessageSaved(); })
+        .catch(e => console.warn("[saveMessage] assistant:", e.message));
 
       addMessage({
         id:      genId(),

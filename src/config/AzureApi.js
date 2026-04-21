@@ -183,3 +183,51 @@ export const cleanupSession = async (sessionId) => {
   }
   return res.json();
 };
+
+// ─────────────────────────────────────────────
+// Chat history — list sessions for a user
+// ─────────────────────────────────────────────
+
+export const getChatSessions = async (userId) => {
+  const res = await fetch(`${AZURE_BASE_URL}/chatSessions?userId=${encodeURIComponent(userId)}`, {
+    headers: authHeaders,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `getChatSessions failed: ${res.status}`);
+  }
+  return res.json(); // [{ sessionId, title, updatedAt }]
+};
+
+// ─────────────────────────────────────────────
+// Chat history — delete a session
+// ─────────────────────────────────────────────
+
+export const deleteChat = async (userId, sessionId) => {
+  const res = await fetch(
+    `${AZURE_BASE_URL}/chatSession/${encodeURIComponent(sessionId)}?userId=${encodeURIComponent(userId)}`,
+    { method: "DELETE", headers: authHeaders }
+  );
+  if (!res.ok && res.status !== 404) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `deleteChat failed: ${res.status}`);
+  }
+  return res.json().catch(() => ({}));
+};
+
+// ─────────────────────────────────────────────
+// Chat history — share a session
+// ─────────────────────────────────────────────
+
+export const shareChat = async (userId, sessionId) => {
+  const res = await fetch(`${AZURE_BASE_URL}/shareChat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({ userId, sessionId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `shareChat failed: ${res.status}`);
+  }
+  return res.json(); // { shareUrl }
+};
