@@ -246,9 +246,3 @@ VITE_AZURE_API_URL=https://<apim-name>.azure-api.net/<api-path>
 | NSG | `data-orch-nsg` | Network security rules |
 
 ---
-
-## Deployment
-
-The frontend deploys automatically via GitHub Actions to Azure Static Web Apps on push to `main`.
-
-Backend deploys via `functionapp.zip` to `dataocrhfunapp` using Azure Functions deployment.
