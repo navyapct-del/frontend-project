@@ -12,7 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar, Line, Pie } from "react-chartjs-2";
-import { queryDocuments } from "../config/AzureApi";
+import { queryDocuments, saveMessage } from "../config/AzureApi";
 import { useChatStore } from "../stores/chatStore";
 import { ChartRenderer } from "../Data-Orch-Components/ChatComponents/ChartRenderer";
 import { ResultTable } from "../Data-Orch-Components/ChatComponents/ResultTable";
@@ -210,6 +210,9 @@ const SymphonyChatbot = () => {
   const [isListening, setIsListening]   = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText]         = useState("");
+  // Stable per-session identifiers for chat history storage
+  const [sessionId] = useState(() => crypto.randomUUID());
+  const userId      = "navya.p@cloudthat.com"; // replace with auth user if login is added
   const [voiceSupported]                = useState(
     () => "webkitSpeechRecognition" in window || "SpeechRecognition" in window
   );
@@ -253,6 +256,8 @@ const SymphonyChatbot = () => {
 
     const msgId = genId();
     addMessage({ id: msgId, sender: "user", text, rawData: null });
+    // Save user message to storage (fire-and-forget, don't block UI)
+    saveMessage(userId, sessionId, text, "user").catch(e => console.warn("[saveMessage] user:", e.message));
     setNewMessage("");
     setEditText("");
     setEditingIndex(null);
@@ -291,6 +296,8 @@ const SymphonyChatbot = () => {
       const assistantContent = data.answer || data.title || (data.type === "table" ? `Table: ${data.row_count} rows` : "");
       const newHistory = [...updatedHistory, { role: "assistant", content: assistantContent }];
       setChatHistory(newHistory.slice(-20));
+      // Save assistant message to storage (fire-and-forget)
+      saveMessage(userId, sessionId, assistantContent, "assistant").catch(e => console.warn("[saveMessage] assistant:", e.message));
 
       addMessage({
         id:      genId(),

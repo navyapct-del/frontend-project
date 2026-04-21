@@ -151,6 +151,23 @@ export const queryDocuments = async (question, filenameFilter = "", history = []
 };
 
 // ─────────────────────────────────────────────
+// Chat history — save a single message
+// ─────────────────────────────────────────────
+
+export const saveMessage = async (userId, sessionId, message, role) => {
+  const res = await fetch(`${AZURE_BASE_URL}/saveMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders },
+    body: JSON.stringify({ userId, sessionId, message, role }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `saveMessage failed: ${res.status}`);
+  }
+  return res.json();
+};
+
+// ─────────────────────────────────────────────
 // Cleanup session (temp blobs for Files Knowledge Bot)
 // ─────────────────────────────────────────────
 
