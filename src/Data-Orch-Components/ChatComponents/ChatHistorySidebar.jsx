@@ -16,6 +16,7 @@ const ChatHistorySidebar = ({ userId, activeSession, onNewChat, onSelectChat, re
   const [openMenu, setOpenMenu]       = useState(null); // sessionId with open 3-dot menu
   const [collapsed, setCollapsed]     = useState(false);
   const menuRef                       = useRef(null);
+  const [deleteModal, setDeleteModal] = useState(null); // sessionId to confirm delete
 
   // ── Fetch sessions ──────────────────────────────────────────────────────
   const fetchSessions = async (doSync = false) => {
@@ -59,15 +60,20 @@ const ChatHistorySidebar = ({ userId, activeSession, onNewChat, onSelectChat, re
   }, []);
 
   // ── Actions ─────────────────────────────────────────────────────────────
-  const handleDelete = async (sessionId) => {
+  const handleDelete = (sessionId) => {
     setOpenMenu(null);
-    if (!window.confirm("Delete this chat?")) return;
+    setDeleteModal(sessionId);
+  };
+
+  const confirmDelete = async () => {
+    const sessionId = deleteModal;
+    setDeleteModal(null);
     try {
       await deleteChat(userId, sessionId);
       setSessions((prev) => prev.filter((s) => s.sessionId !== sessionId));
       if (activeSession === sessionId) onNewChat();
     } catch (err) {
-      alert("Failed to delete: " + err.message);
+      console.error("Failed to delete:", err.message);
     }
   };
 
@@ -111,6 +117,19 @@ const ChatHistorySidebar = ({ userId, activeSession, onNewChat, onSelectChat, re
 
   return (
     <div style={styles.sidebar}>
+      {/* ── Delete confirmation modal ── */}
+      {deleteModal && (
+        <div style={modalStyles.overlay} onClick={() => setDeleteModal(null)}>
+          <div style={modalStyles.box} onClick={(e) => e.stopPropagation()}>
+            <div style={modalStyles.title}>Delete Chat</div>
+            <div style={modalStyles.body}>Are you sure you want to delete this chat? This cannot be undone.</div>
+            <div style={modalStyles.actions}>
+              <button style={modalStyles.cancel} onClick={() => setDeleteModal(null)}>Cancel</button>
+              <button style={modalStyles.confirm} onClick={confirmDelete}>Delete</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* Header */}
       <div style={styles.header}>
         <span style={styles.headerTitle}>Chat History</span>
@@ -368,5 +387,27 @@ const ShareIcon = () => (
     <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
   </svg>
 );
+
+const modalStyles = {
+  overlay: {
+    position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+    display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000,
+  },
+  box: {
+    background: "#fff", borderRadius: "12px", padding: "24px",
+    width: "320px", boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+  },
+  title: { fontSize: "16px", fontWeight: "700", color: "#111827", marginBottom: "10px" },
+  body:  { fontSize: "14px", color: "#6b7280", lineHeight: "1.5", marginBottom: "20px" },
+  actions: { display: "flex", gap: "10px", justifyContent: "flex-end" },
+  cancel: {
+    padding: "8px 18px", borderRadius: "8px", border: "1.5px solid #e5e7eb",
+    background: "#fff", color: "#374151", fontSize: "14px", cursor: "pointer", fontWeight: "500",
+  },
+  confirm: {
+    padding: "8px 18px", borderRadius: "8px", border: "none",
+    background: "#dc2626", color: "#fff", fontSize: "14px", cursor: "pointer", fontWeight: "600",
+  },
+};
 
 export default ChatHistorySidebar;

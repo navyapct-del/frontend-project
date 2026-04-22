@@ -5,9 +5,19 @@ import ChatHistorySidebar from "../Data-Orch-Components/ChatComponents/ChatHisto
 import { AccountContext } from "../config/Account";
 import { getChatSession } from "../config/AzureApi";
 import Pool from "../UserPool";
+import { useChatStore } from "../stores/chatStore";
+
+// Parse JSON from stored message content to restore rawData (charts/tables)
+function tryParseJSON(str) {
+  if (!str || typeof str !== "string") return null;
+  const idx = str.indexOf("{");
+  if (idx === -1) return null;
+  try { return JSON.parse(str.slice(idx)); } catch { return null; }
+}
 
 function InformationSage() {
   const { userEmail } = useContext(AccountContext);
+  const { clearMessages } = useChatStore();
   const [showChatbot, setShowChatbot] = useState(false);
 
   // ── User identity: use context email, but also read directly from Cognito
@@ -32,21 +42,26 @@ function InformationSage() {
   const [sidebarRefresh, setSidebarRefresh]       = useState(0);
 
   const handleNewChat = () => {
+    clearMessages();
     setActiveSessionId(crypto.randomUUID());
     setInitialMessages(undefined);
   };
 
   const handleSelectChat = (session) => {
+    clearMessages();
     setActiveSessionId(session.sessionId);
-    // Fetch full message history from backend
     getChatSession(userId, session.sessionId)
       .then((data) => {
-        const msgs = (data.messages || []).map((m) => ({
-          id: m.timestamp || Math.random().toString(36),
-          sender: m.role === "user" ? "user" : "bot",
-          text: m.content,
-          rawData: null,
-        }));
+        const msgs = (data.messages || []).map((m) => {
+          // For bot messages, try to restore rawData (charts/tables) from stored JSON content
+          const rawData = m.role === "assistant" ? tryParseJSON(m.content) : null;
+          return {
+            id: m.timestamp || Math.random().toString(36),
+            sender: m.role === "user" ? "user" : "bot",
+            text: rawData ? (rawData.answer || m.content) : m.content,
+            rawData: rawData && rawData.type && rawData.type !== "text" ? rawData : null,
+          };
+        });
         setInitialMessages(msgs.length > 0 ? msgs : undefined);
       })
       .catch(() => setInitialMessages(undefined));

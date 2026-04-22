@@ -317,8 +317,9 @@ const SymphonyChatbot = ({
       const assistantContent = data.answer || data.title || (data.type === "table" ? `Table: ${data.row_count} rows` : "");
       const newHistory = [...updatedHistory, { role: "assistant", content: assistantContent }];
       setChatHistory(newHistory.slice(-20));
-      // Save assistant message to storage (fire-and-forget)
-      if (userId) saveMessage(userId, sessionId, assistantContent, "assistant")
+      // Save full JSON for chart/table so it can be restored from history; plain text otherwise
+      const storedContent = (data.type && data.type !== "text") ? JSON.stringify(data) : assistantContent;
+      if (userId) saveMessage(userId, sessionId, storedContent, "assistant")
         .then(() => { if (onMessageSaved) onMessageSaved(); })
         .catch(e => console.warn("[saveMessage] assistant:", e.message));
 
