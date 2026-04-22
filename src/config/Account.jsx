@@ -23,7 +23,7 @@ const Account = (props) => {
 
   const authenticate = async (username, password) => {
     const res = await fetch(
-      `/keycloak/realms/dataocd/protocol/openid-connect/token`,
+      `http://dataocd-keycloak.eastus.azurecontainer.io:8080/realms/dataocd/protocol/openid-connect/token`,
       {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },

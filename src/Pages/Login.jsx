@@ -4,15 +4,17 @@ import logoUrl from "@/assets/images/white-logo.png";
 import illustrationUrl from "@/assets/images/illustration.svg";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import keycloak from "../keycloak";
 
-const KEYCLOAK_URL = "/keycloak";
+const KEYCLOAK_URL = "http://dataocd-keycloak.eastus.azurecontainer.io:8080";
 const REALM = "dataocd";
 const CLIENT_ID = "frontend-app";
 const REDIRECT_URI = "https://agreeable-glacier-0b749ee0f.7.azurestaticapps.net/callback";
 
 const loginWithCloudThat = () => {
-  const url = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=openid`;
-  window.location.href = url;
+  keycloak.init({}).then(() => {
+    keycloak.login({ redirectUri: REDIRECT_URI });
+  });
 };
 
 function Main() {
