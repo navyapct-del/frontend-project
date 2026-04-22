@@ -2,47 +2,15 @@ import DarkModeSwitcher from "@/components/dark-mode-switcher/Main";
 import dom from "@left4code/tw-starter/dist/js/dom";
 import logoUrl from "@/assets/images/white-logo.png";
 import illustrationUrl from "@/assets/images/illustration.svg";
-import { AuthenticationDetails, CognitoUser } from "amazon-cognito-identity-js";
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import UserPool from "../UserPool";
+import React, { useEffect } from "react";
+import keycloak from "../keycloak";
 
 function Main() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [iserror, setIserror] = useState("");
-
-  let navigate = useNavigate();
-
-  const onSubmit = (event) => {
-    event.preventDefault();
-
-    const user = new CognitoUser({
-      Username: email,
-      Pool: UserPool,
-    });
-    const authDetails = new AuthenticationDetails({
-      Username: email,
-      Password: password,
-    });
-
-    user.authenticateUser(authDetails, {
-      onSuccess: (data) => {
-        navigate("/top-menu/documentscontent");
-      },
-      onFailure: (err) => {
-        console.error("onFailure: ", err);
-        setIserror(
-          <h1 className="text-red-500 mt-3 text-center">
-            Incorrect username or password.
-          </h1>
-        );
-      },
-      newPasswordRequired: (data) => {
-        console.log("newPasswordRequired: ", data);
-      },
-    });
-  };
+  useEffect(() => {
+    if (!keycloak.authenticated) {
+      keycloak.login();
+    }
+  }, []);
 
   useEffect(() => {
     dom("body").removeClass("main").removeClass("error-page").addClass("login");

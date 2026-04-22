@@ -2,60 +2,14 @@ import DarkModeSwitcher from "@/components/dark-mode-switcher/Main";
 import dom from "@left4code/tw-starter/dist/js/dom";
 import logoUrl from "@/assets/images/white-logo.png";
 import illustrationUrl from "@/assets/images/illustration.svg";
-import { CognitoUser } from "amazon-cognito-identity-js";
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Pool from "../UserPool";
+import React, { useEffect } from "react";
+import keycloak from "../keycloak";
 
 function Main() {
-  const [stage, setStage] = useState(1);
-  const [email, setEmail] = useState("");
-  const [code, setCode] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  let navigate = useNavigate();
-  const getUser = () => {
-    return new CognitoUser({
-      Username: email.toLowerCase(),
-      Pool,
-    });
-  };
-
-  const sendCode = (event) => {
-    event.preventDefault();
-
-    getUser().forgotPassword({
-      onSuccess: (data) => {
-        console.log("onSuccess:", data);
-      },
-      onFailure: (err) => {
-        console.error("onFailure:", err);
-      },
-      inputVerificationCode: (data) => {
-        console.log("Input code:", data);
-        setStage(2);
-      },
-    });
-  };
-
-  const resetPassword = (event) => {
-    event.preventDefault();
-
-    if (password !== confirmPassword) {
-      console.error("Passwords are not the same");
-      return;
-    }
-
-    getUser().confirmPassword(code, password, {
-      onSuccess: (data) => {
-        console.log("onSuccess:", data);
-        navigate("/");
-      },
-      onFailure: (err) => {
-        console.error("onFailure:", err);
-      },
-    });
-  };
+  useEffect(() => {
+    // Redirect to Keycloak's built-in forgot password flow
+    keycloak.login({ action: "UPDATE_PASSWORD" });
+  }, []);
 
   useEffect(() => {
     dom("body").removeClass("main").removeClass("error-page").addClass("login");
