@@ -224,6 +224,12 @@ const Cards = (props) => {
                 <img src={previewUrl} alt={filename} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
               ) : ext === "pdf" ? (
                 <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none" }} />
+              ) : ["doc","docx","xls","xlsx","ppt","pptx"].includes(ext) ? (
+                <iframe
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewUrl)}`}
+                  title={filename}
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
               ) : (
                 <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
               )}
