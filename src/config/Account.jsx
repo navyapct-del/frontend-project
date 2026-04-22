@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect } from "react";
-import keycloak from "../keycloak";
 
 const AccountContext = createContext();
 
@@ -12,34 +11,48 @@ const Account = (props) => {
     getSession();
   }, []);
 
-  const getSession = async () => {
-    if (keycloak.authenticated) {
-      const profile = await keycloak.loadUserProfile();
-      setUserEmail(profile.email || "");
-      setUserName(`${profile.firstName || ""} ${profile.lastName || ""}`.trim());
-      setUserdetails(keycloak.tokenParsed || {});
+  const getSession = () => {
+    const token = localStorage.getItem("kc_token");
+    if (token) {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      setUserEmail(payload.email || "");
+      setUserName(payload.name || "");
+      setUserdetails(payload);
     }
   };
 
-  const authenticate = async (Username, Password) => {
-    // Keycloak handles login via its own UI; direct login via keycloak.login()
-    return keycloak.login();
+  const authenticate = async (username, password) => {
+    const res = await fetch(
+      `http://dataocd-keycloak.eastus.azurecontainer.io:8080/realms/dataocd/protocol/openid-connect/token`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          grant_type: "password",
+          client_id: "frontend-app",
+          username,
+          password,
+        }),
+      }
+    );
+    const data = await res.json();
+    if (data.access_token) {
+      localStorage.setItem("kc_token", data.access_token);
+      localStorage.setItem("kc_refresh_token", data.refresh_token);
+      getSession();
+    }
+    return data;
   };
 
   const logout = () => {
-    keycloak.logout({ redirectUri: window.location.origin });
+    localStorage.removeItem("kc_token");
+    localStorage.removeItem("kc_refresh_token");
+    window.location.href = "/";
   };
 
   return (
     <AccountContext.Provider
-      value={{
-        authenticate,
-        getSession,
-        logout,
-        userdetails,
-        userEmail,
-        userName,
-      }}
+      value={{ authenticate, getSession, logout, userdetails, userEmail, userName }}
     >
       {props.children}
     </AccountContext.Provider>

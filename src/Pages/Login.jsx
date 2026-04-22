@@ -2,15 +2,54 @@ import DarkModeSwitcher from "@/components/dark-mode-switcher/Main";
 import dom from "@left4code/tw-starter/dist/js/dom";
 import logoUrl from "@/assets/images/white-logo.png";
 import illustrationUrl from "@/assets/images/illustration.svg";
-import React, { useEffect } from "react";
-import keycloak from "../keycloak";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+
+const KEYCLOAK_URL = "http://dataocd-keycloak.eastus.azurecontainer.io:8080";
+const REALM = "dataocd";
+const CLIENT_ID = "frontend-app";
 
 function Main() {
-  useEffect(() => {
-    if (!keycloak.authenticated) {
-      keycloak.login();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [iserror, setIserror] = useState("");
+  const navigate = useNavigate();
+
+  const onSubmit = async (event) => {
+    event.preventDefault();
+    setIserror("");
+    try {
+      const res = await fetch(
+        `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/token`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            grant_type: "password",
+            client_id: CLIENT_ID,
+            username: email,
+            password: password,
+          }),
+        }
+      );
+      const data = await res.json();
+      if (data.access_token) {
+        localStorage.setItem("kc_token", data.access_token);
+        localStorage.setItem("kc_refresh_token", data.refresh_token);
+        navigate("/top-menu/documentscontent");
+      } else {
+        setIserror(
+          <h1 className="text-red-500 mt-3 text-center">
+            Incorrect username or password.
+          </h1>
+        );
+      }
+    } catch (err) {
+      setIserror(
+        <h1 className="text-red-500 mt-3 text-center">Login failed. Please try again.</h1>
+      );
     }
-  }, []);
+  };
 
   useEffect(() => {
     dom("body").removeClass("main").removeClass("error-page").addClass("login");
