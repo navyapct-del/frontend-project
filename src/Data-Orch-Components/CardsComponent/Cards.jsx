@@ -102,7 +102,7 @@ const truncate = (str, n = 16) =>
 
 // ── Card component ───────────────────────────────────────────────────────────
 
-const PREVIEWABLE = new Set(["pdf", "jpg", "jpeg", "png", "gif", "webp", "svg", "txt", "md"]);
+const PREVIEWABLE = new Set(["pdf", "jpg", "jpeg", "png", "gif", "webp", "svg", "txt", "md", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "csv"]);
 
 const Cards = (props) => {
   const [showDetail, setShowDetail]   = useState(false);
