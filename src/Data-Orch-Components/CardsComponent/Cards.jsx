@@ -226,9 +226,10 @@ const Cards = (props) => {
                 <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none" }} />
               ) : ["doc","docx","xls","xlsx","ppt","pptx"].includes(ext) ? (
                 <iframe
-                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewUrl)}`}
+                  src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`}
                   title={filename}
                   style={{ width: "100%", height: "100%", border: "none" }}
+                  onError={(e) => { e.target.style.display="none"; }}
                 />
               ) : (
                 <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
