@@ -3,21 +3,28 @@ import ChatInfoSage from "../Data-Orch-Components/ChatInfoSage";
 import SymphonyChatbot from "./SymphonyChatbot";
 import ChatHistorySidebar from "../Data-Orch-Components/ChatComponents/ChatHistorySidebar";
 import { AccountContext } from "../config/Account";
+import { getChatSession } from "../config/AzureApi";
+import Pool from "../UserPool";
 
 function InformationSage() {
-  const { getSession } = useContext(AccountContext);
+  const { userEmail } = useContext(AccountContext);
   const [showChatbot, setShowChatbot] = useState(false);
 
-  // ── User identity ──────────────────────────────────────────────────────────
-  const [userId, setUserId] = useState("navya.p@cloudthat.com");
+  // ── User identity: use context email, but also read directly from Cognito
+  // in case context hasn't updated yet (async timing issue)
+  const [userId, setUserId] = useState(() => {
+    // Try to get email synchronously from the current Cognito session
+    const user = Pool.getCurrentUser();
+    if (user) {
+      const session = user.getSignInUserSession();
+      if (session) return session.getIdToken().payload.email || "";
+    }
+    return "";
+  });
+
   useEffect(() => {
-    getSession()
-      .then((data) => {
-        const email = data?.email || data?.["email"] || "";
-        if (email) setUserId(email);
-      })
-      .catch(() => {});
-  }, []);
+    if (userEmail) setUserId(userEmail);
+  }, [userEmail]);
 
   // ── Session management ─────────────────────────────────────────────────────
   const [activeSessionId, setActiveSessionId]     = useState(() => crypto.randomUUID());
@@ -31,8 +38,18 @@ function InformationSage() {
 
   const handleSelectChat = (session) => {
     setActiveSessionId(session.sessionId);
-    // Load stored messages if the backend returns them; otherwise just switch session
-    setInitialMessages(session.messages && session.messages.length > 0 ? session.messages : undefined);
+    // Fetch full message history from backend
+    getChatSession(userId, session.sessionId)
+      .then((data) => {
+        const msgs = (data.messages || []).map((m) => ({
+          id: m.timestamp || Math.random().toString(36),
+          sender: m.role === "user" ? "user" : "bot",
+          text: m.content,
+          rawData: null,
+        }));
+        setInitialMessages(msgs.length > 0 ? msgs : undefined);
+      })
+      .catch(() => setInitialMessages(undefined));
   };
 
   const handleMessageSaved = () => {

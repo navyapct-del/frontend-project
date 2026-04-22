@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { getChatSessions, deleteChat, shareChat } from "../../config/AzureApi";
+import { getChatSessions, deleteChat, shareChat, syncChat } from "../../config/AzureApi";
 
 /**
  * ChatHistorySidebar
@@ -18,10 +18,15 @@ const ChatHistorySidebar = ({ userId, activeSession, onNewChat, onSelectChat, re
   const menuRef                       = useRef(null);
 
   // ── Fetch sessions ──────────────────────────────────────────────────────
-  const fetchSessions = async () => {
+  const fetchSessions = async (doSync = false) => {
     if (!userId) return;
     setLoading(true);
     try {
+      // Sync Blob → Table only on initial load (when userId first becomes available)
+      // so that existing chats stored in Blob appear in the sidebar
+      if (doSync) {
+        await syncChat(userId).catch(() => {}); // fire-and-forget, don't block on failure
+      }
       const data = await getChatSessions(userId);
       // Sort newest first
       const sorted = (Array.isArray(data) ? data : []).sort(
@@ -36,7 +41,13 @@ const ChatHistorySidebar = ({ userId, activeSession, onNewChat, onSelectChat, re
     }
   };
 
-  useEffect(() => { fetchSessions(); }, [userId, refreshTrigger]);
+  // Initial load: sync blob data then fetch sessions
+  useEffect(() => { fetchSessions(true); }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Subsequent refreshes (after new messages saved): just fetch, no sync needed
+  useEffect(() => {
+    if (refreshTrigger > 0) fetchSessions(false);
+  }, [refreshTrigger]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Close 3-dot menu on outside click
   useEffect(() => {
@@ -67,9 +78,7 @@ const ChatHistorySidebar = ({ userId, activeSession, onNewChat, onSelectChat, re
       await navigator.clipboard.writeText(shareUrl);
       alert("Share link copied to clipboard!");
     } catch (err) {
-      // Fallback: copy session ID
-      await navigator.clipboard.writeText(sessionId).catch(() => {});
-      alert("Share link copied (session ID).");
+      alert("Failed to generate share link: " + err.message);
     }
   };
 

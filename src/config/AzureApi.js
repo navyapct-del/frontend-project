@@ -5,6 +5,7 @@
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
 
+// Returns headers with Keycloak token + APIM subscription key
 const authHeaders = () => {
   const token = localStorage.getItem("kc_token");
   return {
@@ -55,6 +56,8 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open("POST", `${AZURE_BASE_URL}/upload`);
+      const headers = authHeaders();
+      Object.entries(headers).forEach(([k, v]) => xhr.setRequestHeader(k, v));
 
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -190,6 +193,22 @@ export const cleanupSession = async (sessionId) => {
 };
 
 // ─────────────────────────────────────────────
+// Chat history — get all messages for a session
+// ─────────────────────────────────────────────
+
+export const getChatSession = async (userId, sessionId) => {
+  const res = await fetch(
+    `${AZURE_BASE_URL}/chatSession/${encodeURIComponent(sessionId)}?userId=${encodeURIComponent(userId)}`,
+    { headers: authHeaders() }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `getChatSession failed: ${res.status}`);
+  }
+  return res.json(); // { sessionId, messages: [{role, content, timestamp}] }
+};
+
+// ─────────────────────────────────────────────
 // Chat history — list sessions for a user
 // ─────────────────────────────────────────────
 
@@ -235,4 +254,21 @@ export const shareChat = async (userId, sessionId) => {
     throw new Error(err.error || `shareChat failed: ${res.status}`);
   }
   return res.json(); // { shareUrl }
+};
+
+// ─────────────────────────────────────────────
+// Chat history — sync Blob → Table (backfill existing chats)
+// ─────────────────────────────────────────────
+
+export const syncChat = async (userId) => {
+  const res = await fetch(`${AZURE_BASE_URL}/syncChat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify({ userId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `syncChat failed: ${res.status}`);
+  }
+  return res.json(); // { status, sessionsSynced }
 };

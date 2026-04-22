@@ -233,7 +233,7 @@ const SymphonyChatbot = ({
   const [editText, setEditText]         = useState("");
   // Use prop sessionId if provided, otherwise generate a stable one
   const [sessionId] = useState(() => sessionIdProp || crypto.randomUUID());
-  const userId      = userIdProp || "navya.p@cloudthat.com"; // replace with auth user if login is added
+  const userId      = userIdProp || "";
   const [voiceSupported]                = useState(
     () => "webkitSpeechRecognition" in window || "SpeechRecognition" in window
   );
@@ -278,7 +278,7 @@ const SymphonyChatbot = ({
     const msgId = genId();
     addMessage({ id: msgId, sender: "user", text, rawData: null });
     // Save user message to storage (fire-and-forget, don't block UI)
-    saveMessage(userId, sessionId, text, "user").catch(e => console.warn("[saveMessage] user:", e.message));
+    if (userId) saveMessage(userId, sessionId, text, "user").catch(e => console.warn("[saveMessage] user:", e.message));
     setNewMessage("");
     setEditText("");
     setEditingIndex(null);
@@ -318,7 +318,7 @@ const SymphonyChatbot = ({
       const newHistory = [...updatedHistory, { role: "assistant", content: assistantContent }];
       setChatHistory(newHistory.slice(-20));
       // Save assistant message to storage (fire-and-forget)
-      saveMessage(userId, sessionId, assistantContent, "assistant")
+      if (userId) saveMessage(userId, sessionId, assistantContent, "assistant")
         .then(() => { if (onMessageSaved) onMessageSaved(); })
         .catch(e => console.warn("[saveMessage] assistant:", e.message));
 
