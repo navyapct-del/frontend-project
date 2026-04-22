@@ -8,6 +8,12 @@ import { useNavigate } from "react-router-dom";
 const KEYCLOAK_URL = "http://dataocd-keycloak.eastus.azurecontainer.io:8080";
 const REALM = "dataocd";
 const CLIENT_ID = "frontend-app";
+const REDIRECT_URI = "https://agreeable-glacier-0b749ee0f.7.azurestaticapps.net";
+
+const loginWithCloudThat = () => {
+  const url = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=openid`;
+  window.location.href = url;
+};
 
 function Main() {
   const [email, setEmail] = useState("");
@@ -140,6 +146,15 @@ function Main() {
                       }}
                     >
                       Register
+                    </button>
+                  </div>
+                  <div className="intro-x mt-4 text-center xl:text-left">
+                    <button
+                      type="button"
+                      onClick={loginWithCloudThat}
+                      className="btn bg-orange-500 text-white py-3 px-4 w-full align-top"
+                    >
+                      Login with CloudThat
                     </button>
                   </div>
                   <div className="intro-x mt-10 xl:mt-8 text-slate-600 dark:text-slate-500 text-center xl:text-left tracking-wide">
