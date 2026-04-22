@@ -7,7 +7,6 @@ import ContentManager from "../Pages/ContentManager";
 import ProtectedRoute from "./ProtectedRoute";
 import InformationSage from "../Pages/InformationSage";
 import SingleFileSathi from "../Pages/SingleFileSathi";
-import KeycloakCallback from "../Pages/KeycloakCallback";
 import SharedChat from "../Pages/SharedChat";
 
 function Router() {
@@ -15,7 +14,6 @@ function Router() {
     { path: "/", element: <Login /> },
     { path: "/register", element: <Register /> },
     { path: "/forgetpassword", element: <ForgetPassword /> },
-    { path: "/callback", element: <KeycloakCallback /> },
     { path: "/chat/:sessionId", element: <SharedChat /> },
     {
       path: "/top-menu",
