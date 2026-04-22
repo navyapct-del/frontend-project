@@ -8,7 +8,7 @@ import { useNavigate } from "react-router-dom";
 const KEYCLOAK_URL = "http://dataocd-keycloak.eastus.azurecontainer.io:8080";
 const REALM = "dataocd";
 const CLIENT_ID = "frontend-app";
-const REDIRECT_URI = "https://agreeable-glacier-0b749ee0f.7.azurestaticapps.net";
+const REDIRECT_URI = "https://agreeable-glacier-0b749ee0f.7.azurestaticapps.net/callback";
 
 const loginWithCloudThat = () => {
   const url = `${KEYCLOAK_URL}/realms/${REALM}/protocol/openid-connect/auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=openid`;

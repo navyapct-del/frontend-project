@@ -7,12 +7,14 @@ import ContentManager from "../Pages/ContentManager";
 import ProtectedRoute from "./ProtectedRoute";
 import InformationSage from "../Pages/InformationSage";
 import SingleFileSathi from "../Pages/SingleFileSathi";
+import KeycloakCallback from "../Pages/KeycloakCallback";
 
 function Router() {
   const routes = [
     { path: "/", element: <Login /> },
     { path: "/register", element: <Register /> },
     { path: "/forgetpassword", element: <ForgetPassword /> },
+    { path: "/callback", element: <KeycloakCallback /> },
     {
       path: "/top-menu",
       element: (
