@@ -5,5 +5,11 @@
   },
   "mimeTypes": {
     ".json": "application/json"
-  }
+  },
+  "routes": [
+    {
+      "route": "/keycloak/*",
+      "rewrite": "http://dataocd-keycloak.eastus.azurecontainer.io:8080/*"
+    }
+  ]
 }

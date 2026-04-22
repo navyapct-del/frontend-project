@@ -5,7 +5,7 @@ import illustrationUrl from "@/assets/images/illustration.svg";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const KEYCLOAK_URL = "http://dataocd-keycloak.eastus.azurecontainer.io:8080";
+const KEYCLOAK_URL = "/keycloak";
 const REALM = "dataocd";
 const CLIENT_ID = "frontend-app";
 const REDIRECT_URI = "https://agreeable-glacier-0b749ee0f.7.azurestaticapps.net/callback";
