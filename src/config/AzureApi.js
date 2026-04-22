@@ -182,6 +182,15 @@ export const saveMessage = async (userId, sessionId, message, role) => {
 // Cleanup session (temp blobs for Files Knowledge Bot)
 // ─────────────────────────────────────────────
 
+export const backfillUploadedBy = async () => {
+  const res = await fetch(`${AZURE_BASE_URL}/backfill-uploaded-by`, {
+    method: "POST",
+    headers: authHeaders(),
+  });
+  if (!res.ok) throw new Error(`Backfill failed: ${res.status}`);
+  return res.json();
+};
+
 export const cleanupSession = async (sessionId) => {
   const res = await fetch(`${AZURE_BASE_URL}/cleanup-session`, {
     method: "POST",
