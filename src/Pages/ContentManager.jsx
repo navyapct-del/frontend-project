@@ -102,9 +102,9 @@ export default function ContentManager(props) {
 
   useEffect(() => {
     console.log("[ContentManager] mount | type=", props.type);
-    if (!props.type) return;
+    if (!props.type || !userEmail) return;
     loadDocuments();
-  }, [props.type, loadDocuments]);
+  }, [props.type, userEmail, loadDocuments]);
 
   useEffect(() => {
     if (selectedTags.length > 0)
