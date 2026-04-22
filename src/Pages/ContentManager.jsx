@@ -85,7 +85,7 @@ export default function ContentManager(props) {
       })
       .catch((e) => { console.error("[ContentManager] listDocuments error:", e); setContentFlag(true); })
       .finally(() => setLoading(false));
-  }, []);
+  }, [userEmail]);
 
   const handleUploadComplete = useCallback(() => {
     setShowUpload(false);
