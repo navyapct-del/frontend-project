@@ -27,8 +27,11 @@ export const checkHealth = async () => {
 // Documents — list
 // ─────────────────────────────────────────────
 
-export const listDocuments = async () => {
-  const res = await fetch(`${AZURE_BASE_URL}/documents`, { headers: authHeaders() });
+export const listDocuments = async (userEmail = "") => {
+  const url = userEmail
+    ? `${AZURE_BASE_URL}/documents?uploaded_by=${encodeURIComponent(userEmail)}`
+    : `${AZURE_BASE_URL}/documents`;
+  const res = await fetch(url, { headers: authHeaders() });
   if (!res.ok) throw new Error(`listDocuments failed: ${res.status}`);
   const data = await res.json();
   const rawArray = Array.isArray(data) ? data : (Array.isArray(data?.value) ? data.value : []);
