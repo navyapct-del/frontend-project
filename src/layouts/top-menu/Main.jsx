@@ -40,7 +40,7 @@ function Main() {
 
   const getInitials = () => {
     if (!sessionDetails) return "U";
-    const name = sessionDetails["custom:Full_Name"] || sessionDetails["email"] || "";
+    const name = sessionDetails["name"] || sessionDetails["preferred_username"] || sessionDetails["email"] || "";
     return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
@@ -109,7 +109,7 @@ function Main() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
               <span style={{ fontSize: "12px", fontWeight: "600", color: "#fff" }}>
-                {sessionDetails?.["custom:Full_Name"] || "User"}
+                {sessionDetails?.["name"] || sessionDetails?.["preferred_username"] || "User"}
               </span>
               <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.45)", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {sessionDetails?.["email"] || ""}
