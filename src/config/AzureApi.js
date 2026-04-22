@@ -5,15 +5,17 @@
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
 
-// No function key needed — backend is protected by APIM + IP restrictions
-const authHeaders = {};
+const authHeaders = () => {
+  const token = localStorage.getItem("kc_token");
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
 
 // ─────────────────────────────────────────────
 // Health
 // ─────────────────────────────────────────────
 
 export const checkHealth = async () => {
-  const res = await fetch(`${AZURE_BASE_URL}/health`, { headers: authHeaders });
+  const res = await fetch(`${AZURE_BASE_URL}/health`, { headers: authHeaders() });
   return res.json();
 };
 
@@ -22,7 +24,7 @@ export const checkHealth = async () => {
 // ─────────────────────────────────────────────
 
 export const listDocuments = async () => {
-  const res = await fetch(`${AZURE_BASE_URL}/documents`, { headers: authHeaders });
+  const res = await fetch(`${AZURE_BASE_URL}/documents`, { headers: authHeaders() });
   if (!res.ok) throw new Error(`listDocuments failed: ${res.status}`);
   const data = await res.json();
   const rawArray = Array.isArray(data) ? data : (Array.isArray(data?.value) ? data.value : []);
@@ -75,7 +77,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 
   const res = await fetch(`${AZURE_BASE_URL}/upload`, {
     method: "POST",
-    headers: authHeaders,
+    headers: authHeaders(),
     body: formData,
   });
 
@@ -91,13 +93,13 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 // ─────────────────────────────────────────────
 
 export const downloadDocument = async (documentId) => {
-  const res = await fetch(`${AZURE_BASE_URL}/download/${documentId}`, { headers: authHeaders });
+  const res = await fetch(`${AZURE_BASE_URL}/download/${documentId}`, { headers: authHeaders() });
   if (!res.ok) throw new Error(`Failed to get download URL: ${res.status}`);
   return res.json(); // { sas_url, filename }
 };
 
 export const getPreviewUrl = async (documentId) => {
-  const res = await fetch(`${AZURE_BASE_URL}/download/${documentId}`, { headers: authHeaders });
+  const res = await fetch(`${AZURE_BASE_URL}/download/${documentId}`, { headers: authHeaders() });
   if (!res.ok) throw new Error(`Failed to get preview URL: ${res.status}`);
   const { sas_url } = await res.json();
   return sas_url;
@@ -110,7 +112,7 @@ export const getPreviewUrl = async (documentId) => {
 export const deleteDocument = async (documentId) => {
   const res = await fetch(`${AZURE_BASE_URL}/document/${documentId}`, {
     method: "DELETE",
-    headers: authHeaders,
+    headers: authHeaders(),
   });
   if (!res.ok && res.status !== 404) {
     const err = await res.json().catch(() => ({}));
@@ -135,7 +137,7 @@ const detectChartIntent = (question) =>
 export const queryDocuments = async (question, filenameFilter = "", history = []) => {
   const res = await fetch(`${AZURE_BASE_URL}/query`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({
       q: question,
       filename: filenameFilter,
@@ -157,7 +159,7 @@ export const queryDocuments = async (question, filenameFilter = "", history = []
 export const saveMessage = async (userId, sessionId, message, role) => {
   const res = await fetch(`${AZURE_BASE_URL}/saveMessage`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ userId, sessionId, message, role }),
   });
   if (!res.ok) {
@@ -174,7 +176,7 @@ export const saveMessage = async (userId, sessionId, message, role) => {
 export const cleanupSession = async (sessionId) => {
   const res = await fetch(`${AZURE_BASE_URL}/cleanup-session`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ session_id: sessionId }),
   });
   if (!res.ok) {
@@ -190,7 +192,7 @@ export const cleanupSession = async (sessionId) => {
 
 export const getChatSessions = async (userId) => {
   const res = await fetch(`${AZURE_BASE_URL}/chatSessions?userId=${encodeURIComponent(userId)}`, {
-    headers: authHeaders,
+    headers: authHeaders(),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -206,7 +208,7 @@ export const getChatSessions = async (userId) => {
 export const deleteChat = async (userId, sessionId) => {
   const res = await fetch(
     `${AZURE_BASE_URL}/chatSession/${encodeURIComponent(sessionId)}?userId=${encodeURIComponent(userId)}`,
-    { method: "DELETE", headers: authHeaders }
+    { method: "DELETE", headers: authHeaders() }
   );
   if (!res.ok && res.status !== 404) {
     const err = await res.json().catch(() => ({}));
@@ -222,7 +224,7 @@ export const deleteChat = async (userId, sessionId) => {
 export const shareChat = async (userId, sessionId) => {
   const res = await fetch(`${AZURE_BASE_URL}/shareChat`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify({ userId, sessionId }),
   });
   if (!res.ok) {
