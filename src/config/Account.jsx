@@ -12,13 +12,18 @@ const Account = (props) => {
   }, []);
 
   const getSession = () => {
-    const token = localStorage.getItem("kc_token");
-    if (token) {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      setUserEmail(payload.email || "");
-      setUserName(payload.name || "");
-      setUserdetails(payload);
-    }
+    return new Promise((resolve) => {
+      const token = localStorage.getItem("kc_token");
+      if (token) {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        setUserEmail(payload.email || "");
+        setUserName(payload.name || "");
+        setUserdetails(payload);
+        resolve(payload);
+      } else {
+        resolve({});
+      }
+    });
   };
 
   const authenticate = async (username, password) => {
