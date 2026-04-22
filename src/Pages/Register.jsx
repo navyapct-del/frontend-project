@@ -4,7 +4,7 @@ import illustrationUrl from "@/assets/images/illustration.svg";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const KEYCLOAK_URL = "http://dataocd-keycloak.eastus.azurecontainer.io:8080";
+const KEYCLOAK_URL = "https://data-orch-apim-consumption.azure-api.net/auth";
 const REALM = "dataocd";
 const ADMIN_CLIENT_ID = "admin-cli";
 
