@@ -55,11 +55,13 @@ function InformationSage() {
         const msgs = (data.messages || []).map((m) => {
           // For bot messages, try to restore rawData (charts/tables) from stored JSON content
           const rawData = m.role === "assistant" ? tryParseJSON(m.content) : null;
+          const isRich = rawData && rawData.type && rawData.type !== "text";
           return {
             id: m.timestamp || Math.random().toString(36),
             sender: m.role === "user" ? "user" : "bot",
-            text: rawData ? (rawData.answer || m.content) : m.content,
-            rawData: rawData && rawData.type && rawData.type !== "text" ? rawData : null,
+            text: isRich ? (rawData.answer || m.content) : m.content,
+            rawData: isRich ? rawData : null,
+            originalQuery: isRich ? (rawData.query || "") : undefined,
           };
         });
         setInitialMessages(msgs.length > 0 ? msgs : undefined);
