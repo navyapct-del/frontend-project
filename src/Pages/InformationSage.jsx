@@ -1,4 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import ChatInfoSage from "../Data-Orch-Components/ChatInfoSage";
 import SymphonyChatbot from "./SymphonyChatbot";
 import ChatHistorySidebar from "../Data-Orch-Components/ChatComponents/ChatHistorySidebar";
@@ -19,6 +20,9 @@ function InformationSage() {
   const { userEmail } = useContext(AccountContext);
   const { clearMessages } = useChatStore();
   const [showChatbot, setShowChatbot] = useState(false);
+  const [searchParams] = useSearchParams();
+  // documentId comes from ?documentId= query param (set by ContentManager or any link)
+  const [documentId] = useState(() => searchParams.get("documentId") || "");
 
   // ── User identity: use context email, but also read directly from Cognito
   // in case context hasn't updated yet (async timing issue)
@@ -94,6 +98,7 @@ function InformationSage() {
           <SymphonyChatbot
             sessionId={activeSessionId}
             userId={userId}
+            documentId={documentId}
             initialMessages={initialMessages}
             onMessageSaved={handleMessageSaved}
           />

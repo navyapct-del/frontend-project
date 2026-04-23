@@ -143,7 +143,7 @@ const CHART_INTENT_KEYWORDS = [
 const detectChartIntent = (question) =>
   CHART_INTENT_KEYWORDS.some((kw) => question.toLowerCase().includes(kw));
 
-export const queryDocuments = async (question, filenameFilter = "", history = []) => {
+export const queryDocuments = async (question, filenameFilter = "", history = [], documentId = "") => {
   const res = await fetch(`${AZURE_BASE_URL}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json", ...authHeaders() },
@@ -151,6 +151,7 @@ export const queryDocuments = async (question, filenameFilter = "", history = []
       q: question,
       filename: filenameFilter,
       history,
+      documentId,
       intent: detectChartIntent(question) ? "chart" : "auto",
     }),
   });
