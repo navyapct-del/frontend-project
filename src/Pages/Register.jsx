@@ -4,53 +4,7 @@ import illustrationUrl from "@/assets/images/illustration.svg";
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 
-const KEYCLOAK_URL = "https://data-orch-apim-consumption.azure-api.net/auth";
-const REALM = "dataocd";
-const ADMIN_CLIENT_ID = "admin-cli";
-
-// Get admin token then create user
-async function registerWithKeycloak(firstName, lastName, email, password) {
-  // 1. Get admin token
-  const tokenRes = await fetch(
-    `${KEYCLOAK_URL}/realms/master/protocol/openid-connect/token`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        grant_type: "password",
-        client_id: ADMIN_CLIENT_ID,
-        username: "cloudthat",
-        password: "cloudthat@123",
-      }),
-    }
-  );
-  const tokenData = await tokenRes.json();
-  if (!tokenData.access_token) throw new Error("Admin auth failed");
-
-  // 2. Create user
-  const createRes = await fetch(
-    `${KEYCLOAK_URL}/admin/realms/${REALM}/users`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${tokenData.access_token}`,
-      },
-      body: JSON.stringify({
-        firstName,
-        lastName,
-        email,
-        username: email,
-        enabled: true,
-        emailVerified: true,
-        credentials: [{ type: "password", value: password, temporary: false }],
-      }),
-    }
-  );
-
-  if (createRes.status === 409) throw new Error("User already exists.");
-  if (!createRes.ok) throw new Error("Registration failed. Please try again.");
-}
+const API_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
 
 function Main() {
   const [firstName, setFirstName] = useState("");
@@ -74,10 +28,19 @@ function Main() {
     if (password.length < 8)  return setError("Password must be at least 8 characters.");
     setLoading(true);
     try {
-      await registerWithKeycloak(firstName, lastName, email, password);
-      setSuccess(true);
-    } catch (err) {
-      setError(err.message);
+      const res = await fetch(`${API_URL}/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password, first_name: firstName, last_name: lastName }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setSuccess(true);
+      } else {
+        setError(data.error || "Registration failed.");
+      }
+    } catch {
+      setError("Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -120,63 +83,31 @@ function Main() {
             ) : (
               <form className="mt-6" onSubmit={onSubmit}>
                 <div className="intro-x mt-8 space-y-4">
-                  <input
-                    type="text"
-                    className="intro-x login__input form-control py-3 px-4 block"
-                    placeholder="First Name"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                  />
-                  <input
-                    type="text"
-                    className="intro-x login__input form-control py-3 px-4 block"
-                    placeholder="Last Name"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                  />
-                  <input
-                    type="email"
-                    className="intro-x login__input form-control py-3 px-4 block"
-                    placeholder="Email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                  <input
-                    type="password"
-                    className="intro-x login__input form-control py-3 px-4 block"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                  <input
-                    type="password"
-                    className="intro-x login__input form-control py-3 px-4 block"
-                    placeholder="Confirm Password"
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    required
-                  />
+                  <input type="text" className="intro-x login__input form-control py-3 px-4 block"
+                    placeholder="First Name" value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)} required />
+                  <input type="text" className="intro-x login__input form-control py-3 px-4 block"
+                    placeholder="Last Name" value={lastName}
+                    onChange={(e) => setLastName(e.target.value)} required />
+                  <input type="email" className="intro-x login__input form-control py-3 px-4 block"
+                    placeholder="Email" value={email}
+                    onChange={(e) => setEmail(e.target.value)} required />
+                  <input type="password" className="intro-x login__input form-control py-3 px-4 block"
+                    placeholder="Password" value={password}
+                    onChange={(e) => setPassword(e.target.value)} required />
+                  <input type="password" className="intro-x login__input form-control py-3 px-4 block"
+                    placeholder="Confirm Password" value={confirm}
+                    onChange={(e) => setConfirm(e.target.value)} required />
                 </div>
-
                 {error && <p className="text-red-500 mt-3 text-center text-sm">{error}</p>}
-
                 <div className="intro-x mt-5 xl:mt-8 text-center xl:text-left">
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="btn bg-cyan-900 text-white py-3 px-4 w-full xl:w-32 xl:mr-3 align-top"
-                  >
+                  <button type="submit" disabled={loading}
+                    className="btn bg-cyan-900 text-white py-3 px-4 w-full xl:w-32 xl:mr-3 align-top">
                     {loading ? "Registering..." : "Register"}
                   </button>
-                  <button
-                    type="button"
+                  <button type="button"
                     className="btn btn-outline-secondary py-3 px-4 w-full xl:w-32 mt-3 xl:mt-0 align-top"
-                    onClick={() => navigate("/")}
-                  >
+                    onClick={() => navigate("/")}>
                     Sign In
                   </button>
                 </div>
