@@ -296,8 +296,6 @@ const s = {
     whiteSpace:   "nowrap",
     lineHeight:   "1.3",
   },
-    lineHeight: "1.3",
-  },
   date: {
     fontSize: "10px",
     color:    "#9ca3af",
