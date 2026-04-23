@@ -77,14 +77,21 @@ function tableToChart(columns, rows, question) {
   return { type: "chart", chart_type: chartType, labels, values, answer: null };
 }
 
+// Track which message IDs have finished typing (persists across tab switches)
+const finishedMessages = new Set();
+
 // Streams text word-by-word, then renders full markdown once done
-function StreamedText({ text }) {
-  const [done, setDone] = useState(false);
+function StreamedText({ text, msgId }) {
+  const alreadyDone = msgId && finishedMessages.has(msgId);
+  const [done, setDone] = useState(alreadyDone);
   if (!text) return null;
   if (done) return <MarkdownText text={text} />;
   return (
     <span style={{ whiteSpace: "pre-wrap", fontSize: "13.5px", color: "#1e293b", lineHeight: "1.7" }}>
-      <TypewriterText text={text} onDone={() => setDone(true)} />
+      <TypewriterText text={text} onDone={() => {
+        if (msgId) finishedMessages.add(msgId);
+        setDone(true);
+      }} />
       <span style={{ display: "inline-block", width: "2px", height: "14px", background: "#0d3347", marginLeft: "2px", verticalAlign: "middle", animation: "blink 0.8s step-end infinite" }} />
       <style>{`@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }`}</style>
     </span>
@@ -136,7 +143,7 @@ export function BotMessage({ msg }) {
   }
 
   if (!data) {
-    return <StreamedText text={stripSources(text) || ""} />;
+    return <StreamedText text={stripSources(text) || ""} msgId={msg.id} />;
   }
 
   const isChartQuery = originalQuery && CHART_INTENT_RE.test(originalQuery) && !EXPLAIN_RE.test(originalQuery);
@@ -162,7 +169,13 @@ export function BotMessage({ msg }) {
   if (data.type === "chart") {
     // If user asked to explain/describe, show the answer as text instead of re-rendering a chart
     if (originalQuery && EXPLAIN_RE.test(originalQuery)) {
-      return <StreamedText text={stripSources(data.answer) || "Here is the explanation."} />;
+      const genericPhrases = ["chart generated", "data points", "chart from"];
+      const answerText = stripSources(data.answer) || "";
+      const isGeneric = genericPhrases.some(p => answerText.toLowerCase().includes(p));
+      const displayText = isGeneric
+        ? "The chart displays the data from your document. Please ask a more specific question about the data for a detailed explanation."
+        : answerText || "Here is the explanation.";
+      return <StreamedText text={displayText} msgId={msg.id} />;
     }
     return <ChartRenderer data={data} />;
   }
@@ -187,7 +200,7 @@ export function BotMessage({ msg }) {
     if (parsed) return <ChartRenderer data={parsed} />;
   }
 
-  return <StreamedText text={answer || "No relevant information found in this document."} />;
+  return <StreamedText text={answer || "No relevant information found in this document."} msgId={msg.id} />;
 }
 
 export default BotMessage;
