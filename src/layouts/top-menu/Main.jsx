@@ -35,7 +35,8 @@ function Main() {
   useEffect(() => { getSessionDetails(); }, []);
 
   const getSessionDetails = async () => {
-    await getSession().then((data) => setSessionDetails(data));
+    const data = getSession();
+    setSessionDetails(data);
   };
 
   const getInitials = () => {
