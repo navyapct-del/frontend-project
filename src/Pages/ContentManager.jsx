@@ -550,7 +550,7 @@ const s = {
     whiteSpace: "nowrap", marginLeft: "auto",
   },
   content: { flex: 1, padding: "24px 28px", background: "#f8f9fb" },
-  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 130px))", gap: "16px" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 180px))", gap: "20px" },
   listWrap: { overflowX: "auto" },
   listTable: { width: "100%", borderCollapse: "collapse", fontSize: "13px" },
   listHead: { background: "#0d3347" },
