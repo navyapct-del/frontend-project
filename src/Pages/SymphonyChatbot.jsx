@@ -231,8 +231,14 @@ const SymphonyChatbot = ({
   const [isListening, setIsListening]   = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText]         = useState("");
-  // Use prop sessionId if provided, otherwise generate a stable one
-  const [sessionId] = useState(() => sessionIdProp || crypto.randomUUID());
+  // Use prop sessionId if provided, otherwise generate a stable one.
+  // Sync when the prop changes (e.g. user switches to a different chat session).
+  const [sessionId, setSessionId] = useState(() => sessionIdProp || crypto.randomUUID());
+  useEffect(() => {
+    if (sessionIdProp && sessionIdProp !== sessionId) {
+      setSessionId(sessionIdProp);
+    }
+  }, [sessionIdProp]); // eslint-disable-line react-hooks/exhaustive-deps
   const userId      = userIdProp || "";
   const [voiceSupported]                = useState(
     () => "webkitSpeechRecognition" in window || "SpeechRecognition" in window

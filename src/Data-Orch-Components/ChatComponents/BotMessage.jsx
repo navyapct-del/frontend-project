@@ -91,6 +91,12 @@ function StreamedText({ text }) {
   );
 }
 
+// Strip any trailing "Sources: ..." text from answer strings (legacy cleanup)
+function stripSources(text) {
+  if (!text || typeof text !== "string") return text;
+  return text.replace(/\n*\s*Sources:\s*[^\n]*/gi, "").trim();
+}
+
 export function BotMessage({ msg }) {
   let resolvedMsg = msg;
 
@@ -130,7 +136,7 @@ export function BotMessage({ msg }) {
   }
 
   if (!data) {
-    return <StreamedText text={text || ""} />;
+    return <StreamedText text={stripSources(text) || ""} />;
   }
 
   const isChartQuery = originalQuery && CHART_INTENT_RE.test(originalQuery) && !EXPLAIN_RE.test(originalQuery);
@@ -156,7 +162,7 @@ export function BotMessage({ msg }) {
   if (data.type === "chart") {
     // If user asked to explain/describe, show the answer as text instead of re-rendering a chart
     if (originalQuery && EXPLAIN_RE.test(originalQuery)) {
-      return <StreamedText text={data.answer || "Here is the explanation."} />;
+      return <StreamedText text={stripSources(data.answer) || "Here is the explanation."} />;
     }
     return <ChartRenderer data={data} />;
   }
@@ -169,19 +175,19 @@ export function BotMessage({ msg }) {
     }
     return (
       <div>
-        {data.answer && <p style={{ marginBottom: "6px", fontSize: "13px" }}>{data.answer}</p>}
+        {data.answer && <p style={{ marginBottom: "6px", fontSize: "13px" }}>{stripSources(data.answer)}</p>}
         <ResultTable columns={cols} rows={data.rows} />
       </div>
     );
   }
 
-  const answer = data.answer || msg.text || "";
+  const answer = stripSources(data.answer || msg.text || "");
   if (isChartQuery) {
     const parsed = parseChartFromText(answer, msg.originalQuery);
     if (parsed) return <ChartRenderer data={parsed} />;
   }
 
-  return <StreamedText text={answer || "No relevant data found."} />;
+  return <StreamedText text={answer || "No relevant information found in this document."} />;
 }
 
 export default BotMessage;
