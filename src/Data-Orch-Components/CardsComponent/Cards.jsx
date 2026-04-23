@@ -128,6 +128,8 @@ const Cards = (props) => {
       const a = document.createElement("a");
       a.href     = sas_url;
       a.download = fname || filename.split("/").pop();
+      a.target   = "_blank";
+      a.rel      = "noopener noreferrer";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -249,7 +251,7 @@ const s = {
     background:   "#ffffff",
     border:       "1px solid #e5e7eb",
     borderRadius: "10px",
-    padding:      "14px 10px 10px",
+    padding:      "16px 12px 12px",
     cursor:       "pointer",
     display:      "flex",
     flexDirection:"column",
@@ -258,6 +260,10 @@ const s = {
     transition:   "box-shadow 0.15s",
     position:     "relative",
     userSelect:   "none",
+    width:        "130px",
+    height:       "140px",
+    justifyContent: "center",
+    flexShrink:   0,
   },
   thumb: {
     width:          "64px",
@@ -280,11 +286,16 @@ const s = {
     objectFit: "contain",
   },
   name: {
-    fontSize:   "12px",
-    fontWeight: "600",
-    color:      "#1f2937",
-    textAlign:  "center",
-    wordBreak:  "break-all",
+    fontSize:     "12px",
+    fontWeight:   "600",
+    color:        "#1f2937",
+    textAlign:    "center",
+    width:        "100%",
+    overflow:     "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace:   "nowrap",
+    lineHeight:   "1.3",
+  },
     lineHeight: "1.3",
   },
   date: {
