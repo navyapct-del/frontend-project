@@ -12,7 +12,7 @@ import {
   Legend,
 } from "chart.js";
 import { Bar, Line, Pie } from "react-chartjs-2";
-import { queryDocuments, multiDocQuery, saveMessage } from "../config/AzureApi";
+import { queryDocuments, saveMessage } from "../config/AzureApi";
 import { useChatStore } from "../stores/chatStore";
 import { ChartRenderer } from "../Data-Orch-Components/ChatComponents/ChartRenderer";
 import { ResultTable } from "../Data-Orch-Components/ChatComponents/ResultTable";
@@ -231,7 +231,6 @@ const SymphonyChatbot = ({
   const [isListening, setIsListening]   = useState(false);
   const [editingIndex, setEditingIndex] = useState(null);
   const [editText, setEditText]         = useState("");
-  const [queryMode, setQueryMode]       = useState("current"); // "current" | "all"
   // Use prop sessionId if provided, otherwise generate a stable one
   const [sessionId] = useState(() => sessionIdProp || crypto.randomUUID());
   const userId      = userIdProp || "";
@@ -302,14 +301,7 @@ const SymphonyChatbot = ({
     const updatedHistory = [...chatHistory, { role: "user", content: resolvedQuery }];
 
     try {
-      let raw;
-      if (queryMode === "all") {
-        raw = await multiDocQuery(resolvedQuery);
-        // Wrap into the standard shape so the rest of the code works unchanged
-        raw = { type: "text", answer: raw.answer, sources: raw.sources, query: resolvedQuery };
-      } else {
-        raw = await queryDocuments(resolvedQuery, "", updatedHistory);
-      }
+      const raw = await queryDocuments(resolvedQuery, "", updatedHistory);
       console.log("[SymphonyChatbot] response type:", raw.type, raw);
 
       // Normalize: if backend returns type:"text" but answer is a JSON string, unwrap it
@@ -385,16 +377,6 @@ const SymphonyChatbot = ({
                   <BotAvatar />
                   <div style={sc.botBubble}>
                     <BotMessage msg={msg} />
-                    {msg.rawData?.sources?.length > 0 && (
-                      <div style={{ marginTop: "8px", paddingTop: "8px", borderTop: "1px solid #e5e7eb", fontSize: "12px", color: "#6b7280" }}>
-                        <span style={{ fontWeight: 600 }}>Sources: </span>
-                        {msg.rawData.sources.map((s, si) => (
-                          <span key={si} style={{ display: "inline-block", background: "#f3f4f6", border: "1px solid #e5e7eb", borderRadius: "4px", padding: "1px 6px", marginRight: "4px", marginTop: "2px" }}>
-                            {s.fileName || s.documentId}
-                          </span>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 </div>
               ) : (
@@ -447,26 +429,6 @@ const SymphonyChatbot = ({
               <button type="button" onClick={cancelEdit} style={sc.cancelEditBtn}>Cancel</button>
             </div>
           )}
-          {/* Query mode toggle */}
-          <div style={{ display: "flex", gap: "6px", alignItems: "center", fontSize: "12px", color: "#6b7280" }}>
-            <span>Search:</span>
-            {["current", "all"].map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setQueryMode(mode)}
-                style={{
-                  padding: "3px 10px", borderRadius: "12px", border: "1.5px solid",
-                  borderColor: queryMode === mode ? "#0d3347" : "#e5e7eb",
-                  background: queryMode === mode ? "#0d3347" : "#f9fafb",
-                  color: queryMode === mode ? "#fff" : "#6b7280",
-                  fontSize: "12px", cursor: "pointer", fontWeight: queryMode === mode ? 600 : 400,
-                }}
-              >
-                {mode === "current" ? "Current document" : "All documents"}
-              </button>
-            ))}
-          </div>
           <div style={sc.inputRow} className="chat-input-row">
             <input
               type="text"

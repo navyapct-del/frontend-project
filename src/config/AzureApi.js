@@ -284,20 +284,3 @@ export const syncChat = async (userId) => {
   }
   return res.json(); // { status, sessionsSynced }
 };
-
-// ─────────────────────────────────────────────
-// Multi-document query
-// ─────────────────────────────────────────────
-
-export const multiDocQuery = async (query, documentIds = []) => {
-  const res = await fetch(`${AZURE_BASE_URL}/multiDocQuery`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", ...authHeaders() },
-    body: JSON.stringify({ query, documentIds }),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `multiDocQuery failed: ${res.status}`);
-  }
-  return res.json(); // { answer, sources: [{ documentId, fileName }] }
-};
