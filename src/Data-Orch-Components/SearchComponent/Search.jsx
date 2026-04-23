@@ -1,31 +1,13 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Lucide } from "@/base-components";
 
-export default function Search({ allData, setFilteredData, selectedTags }) {
-  const [searchQuery, setSearchQuery] = useState("");
+export default function Search({ setSearchQuery }) {
+  const [value, setValue] = useState("");
 
-  useEffect(() => {
-    const filtered = allData.filter((item) => {
-      // Split tags by comma and trim whitespace
-      const tagsArray = item.tags
-        ? item.tags.split(",").map((tag) => tag.trim().toLowerCase())
-        : [];
-
-      // Check if any of the selected tags match the item's tags
-      const matchesTags =
-        selectedTags.length === 0 ||
-        selectedTags.some((tag) => tagsArray.includes(tag.toLowerCase()));
-
-      // Check if the item's name or tags include the search query
-      const matchesSearch =
-        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        tagsArray.some((tag) => tag.includes(searchQuery.toLowerCase()));
-
-      return matchesTags && matchesSearch;
-    });
-
-    setFilteredData(filtered);
-  }, [searchQuery, selectedTags, allData, setFilteredData]);
+  const handleChange = (e) => {
+    setValue(e.target.value);
+    setSearchQuery(e.target.value);
+  };
 
   return (
     <div className="relative w-full sm:w-auto mt-3 sm:mt-0">
@@ -37,8 +19,8 @@ export default function Search({ allData, setFilteredData, selectedTags }) {
         type="text"
         className="form-control w-full sm:w-64 box px-10"
         placeholder="Search files"
-        value={searchQuery}
-        onChange={(e) => setSearchQuery(e.target.value)}
+        value={value}
+        onChange={handleChange}
       />
     </div>
   );

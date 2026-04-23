@@ -60,6 +60,7 @@ export default function ContentManager(props) {
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, docId: null });
   const [sidebarDoc, setSidebarDoc]       = useState(""); // selected doc name for sidebar filter
   const [selectedFileType, setSelectedFileType] = useState("all");
+  const [searchQuery, setSearchQuery]           = useState("");
 
   const loadDocuments = useCallback(() => {
     setLoading(true);
@@ -107,13 +108,18 @@ export default function ContentManager(props) {
   }, [props.type, userEmail, loadDocuments]);
 
   useEffect(() => {
+    let base = allData;
+    if (searchQuery.trim())
+      base = allData.filter((item) =>
+        item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.tags || "").toLowerCase().includes(searchQuery.toLowerCase())
+      );
     if (selectedTags.length > 0)
-      setFilteredData(allData.filter((item) => selectedTags.some((tag) => item.tags.includes(tag))));
-    else if (selectedFileType !== "all")
-      setFilteredData(allData.filter(d => d.file_type === selectedFileType));
-    else
-      setFilteredData(allData);
-  }, [allData, selectedTags, selectedFileType]);
+      base = base.filter((item) => selectedTags.some((tag) => item.tags.includes(tag)));
+    if (selectedFileType !== "all")
+      base = base.filter(d => d.file_type === selectedFileType);
+    setFilteredData(base);
+  }, [allData, selectedTags, selectedFileType, searchQuery]);
 
   useEffect(() => {
     let filtered = allData;
@@ -214,7 +220,7 @@ export default function ContentManager(props) {
                 <svg style={s.searchIcon} viewBox="0 0 24 24" fill="none" stroke="#9ca3af" strokeWidth="2">
                   <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                 </svg>
-                <Search allData={allData} setFilteredData={setFilteredData} selectedTags={selectedTags} />
+                <Search allData={allData} setFilteredData={setFilteredData} setSearchQuery={setSearchQuery} selectedTags={selectedTags} />
               </div>
             )}
 
