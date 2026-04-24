@@ -156,10 +156,6 @@ const ChatInfoSage = () => {
               <Lucide icon="Bot" className="w-5 h-5 text-cyan-900 mt-1 shrink-0" />
               <div className="bg-white border border-gray-200 rounded-lg px-3 py-2 text-sm text-cyan-900">
                 Hi! Search for any image or upload an image to query it.
-                <div className="mt-2 text-xs text-gray-400 space-y-1">
-                  <div>💡 <em>search for any image</em></div>
-                  <div>💡 <em>upload an image and query</em></div>
-                </div>
               </div>
             </div>
           )}
