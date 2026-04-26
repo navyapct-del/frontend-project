@@ -100,20 +100,27 @@ const formatDate = (dateString) => {
 const truncate = (str, n = 16) =>
   str && str.length > n ? str.slice(0, n) + "…" : str;
 
-// ── TextPreview — fetches and renders plain text/CSV files inline ─────────────
-function TextPreview({ url }) {
+// ── TextPreview — fetches text/CSV via backend proxy (avoids CORS on blob storage) ──
+const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
+
+function TextPreview({ docId }) {
   const [content, setContent] = useState(null);
   const [error, setError]     = useState(null);
   useEffect(() => {
-    fetch(url)
+    const token = localStorage.getItem("kc_token");
+    const headers = {
+      "Ocp-Apim-Subscription-Key": import.meta.env.VITE_APIM_SUBSCRIPTION_KEY || "",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+    fetch(`${AZURE_BASE_URL}/file?id=${encodeURIComponent(docId)}`, { headers })
       .then((r) => {
         if (!r.ok) throw new Error(r.status === 404 ? "File not found. It may have been deleted." : `Failed to load file (${r.status}).`);
         return r.text();
       })
       .then(setContent)
       .catch((e) => setError(e.message));
-  }, [url]);
-  if (error)   return <p style={{ padding: "16px", color: "#dc2626" }}>{error}</p>;
+  }, [docId]);
+  if (error)    return <p style={{ padding: "16px", color: "#dc2626" }}>{error}</p>;
   if (!content) return <p style={{ padding: "16px", color: "#6b7280" }}>Loading…</p>;
   return (
     <pre style={{ padding: "16px", margin: 0, overflowY: "auto", height: "100%", fontSize: "13px", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", background: "#f9fafb", color: "#1f2937" }}>
@@ -261,7 +268,7 @@ const Cards = (props) => {
                   style={{ width: "100%", height: "100%", border: "none" }}
                 />
               ) : ["txt","csv","md","json","xml","yaml","yml"].includes(ext) ? (
-                <TextPreview url={previewUrl} />
+                <TextPreview docId={docId} />
               ) : (
                 <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
               )}
