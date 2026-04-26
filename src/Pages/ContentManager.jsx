@@ -14,6 +14,7 @@ import TabulatorFile from "../Data-Orch-Components/TabulatorFile";
 const EXT_MAP = {
   pdf: "pdf", doc: "word", docx: "word",
   csv: "csv", xls: "excel", xlsx: "excel", txt: "txt",
+  jpg: "image", jpeg: "image", png: "image", gif: "image", webp: "image", svg: "image",
 };
 function getFileType(filename = "") {
   const ext = filename.split(".").pop().toLowerCase();
@@ -33,6 +34,8 @@ const FILE_TYPE_LABELS = [
     icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="#dcfce7" stroke="#16a34a" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="#16a34a" strokeWidth="1.5"/><text x="7" y="17" fontSize="5" fontWeight="bold" fill="#16a34a">XLS</text></> },
   { key: "txt",   label: "Text",       color: "#7c3aed", bg: "#ede9fe",
     icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" fill="#ede9fe" stroke="#7c3aed" strokeWidth="1.5"/><polyline points="14 2 14 8 20 8" fill="none" stroke="#7c3aed" strokeWidth="1.5"/><text x="8" y="17" fontSize="5" fontWeight="bold" fill="#7c3aed">TXT</text></> },
+  { key: "image", label: "Images",     color: "#db2777", bg: "#fce7f3",
+    icon: <><rect x="3" y="3" width="18" height="18" rx="2" fill="#fce7f3" stroke="#db2777" strokeWidth="1.5"/><circle cx="8.5" cy="8.5" r="1.5" fill="#db2777"/><polyline points="21 15 16 10 5 21" fill="none" stroke="#db2777" strokeWidth="1.5"/></> },
 ];
 
 const TYPE_COLORS = {

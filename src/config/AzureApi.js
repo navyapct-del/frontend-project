@@ -5,11 +5,10 @@
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
 
-// Returns headers with Keycloak token + APIM subscription key
 const authHeaders = () => {
   const token = localStorage.getItem("kc_token");
   return {
-    "Ocp-Apim-Subscription-Key": "d9668940e6b645b0a1f915ca6ae832cd",
+    "Ocp-Apim-Subscription-Key": import.meta.env.VITE_APIM_SUBSCRIPTION_KEY || "",
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
 };

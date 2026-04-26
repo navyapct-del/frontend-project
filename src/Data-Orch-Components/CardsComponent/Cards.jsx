@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { getPreviewUrl, downloadDocument } from "../../config/AzureApi";
 import pdf_Url    from "../../assets/images/pdf.png";
 import docx_Url   from "../../assets/images/docx.png";
@@ -99,6 +99,25 @@ const formatDate = (dateString) => {
 
 const truncate = (str, n = 16) =>
   str && str.length > n ? str.slice(0, n) + "…" : str;
+
+// ── TextPreview — fetches and renders plain text/CSV files inline ─────────────
+function TextPreview({ url }) {
+  const [content, setContent] = useState(null);
+  const [error, setError]     = useState(null);
+  useEffect(() => {
+    fetch(url)
+      .then((r) => r.text())
+      .then(setContent)
+      .catch(() => setError("Failed to load file content."));
+  }, [url]);
+  if (error)   return <p style={{ padding: "16px", color: "#dc2626" }}>{error}</p>;
+  if (!content) return <p style={{ padding: "16px", color: "#6b7280" }}>Loading…</p>;
+  return (
+    <pre style={{ padding: "16px", margin: 0, overflowY: "auto", height: "100%", fontSize: "13px", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", background: "#f9fafb", color: "#1f2937" }}>
+      {content}
+    </pre>
+  );
+}
 
 // ── Card component ───────────────────────────────────────────────────────────
 
@@ -226,13 +245,20 @@ const Cards = (props) => {
                 <img src={previewUrl} alt={filename} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
               ) : ext === "pdf" ? (
                 <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none" }} />
-              ) : ["doc","docx","xls","xlsx","ppt","pptx"].includes(ext) ? (
+              ) : ["doc","docx","ppt","pptx"].includes(ext) ? (
                 <iframe
                   src={`https://docs.google.com/viewer?url=${encodeURIComponent(previewUrl)}&embedded=true`}
                   title={filename}
                   style={{ width: "100%", height: "100%", border: "none" }}
-                  onError={(e) => { e.target.style.display="none"; }}
                 />
+              ) : ["xls","xlsx"].includes(ext) ? (
+                <iframe
+                  src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(previewUrl)}`}
+                  title={filename}
+                  style={{ width: "100%", height: "100%", border: "none" }}
+                />
+              ) : ["txt","csv","md","json","xml","yaml","yml"].includes(ext) ? (
+                <TextPreview url={previewUrl} />
               ) : (
                 <iframe src={previewUrl} title={filename} style={{ width: "100%", height: "100%", border: "none", background: "#fff" }} />
               )}
