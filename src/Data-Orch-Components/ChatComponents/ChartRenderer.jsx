@@ -166,7 +166,6 @@ function PieInsightsPanel({ labels, values }) {
 
 export function ChartRenderer({ data }) {
   const title = data.title || null;
-  console.log("[ChartRenderer] data:", JSON.stringify(data).slice(0, 500));
 
   // Shape C: { labels, series: { SeriesName: [values] } }
   if (data.labels && data.series && typeof data.series === "object" && !Array.isArray(data.series)) {
