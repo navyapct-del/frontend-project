@@ -167,6 +167,7 @@ export function BotMessage({ msg }) {
   }
 
   if (data.type === "chart") {
+    console.log("[BotMessage] chart data:", JSON.stringify({type: data.type, hasData: !!data.data, dataLen: data.data?.length, hasConfig: !!data.chart_config, chartType: data.chart_config?.type, xKey: data.chart_config?.xKey, series: data.chart_config?.series, labels: data.labels, values: data.values?.length}));
     // If user asked to explain/describe, show the answer as text instead of re-rendering a chart
     if (originalQuery && EXPLAIN_RE.test(originalQuery)) {
       const genericPhrases = ["chart generated", "data points", "chart from"];
