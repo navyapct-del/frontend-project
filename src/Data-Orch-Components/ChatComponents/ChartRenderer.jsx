@@ -254,15 +254,23 @@ export function ChartRenderer({ data }) {
 
   // Shape B: { data[], chart_config }
   if (data.data?.length > 0 && data.chart_config) {
-    const { type: cfgType, xKey, series } = data.chart_config;
+    const { type: cfgType, xKey: rawXKey, series } = data.chart_config;
     const chartType = (cfgType || "bar").toLowerCase();
     const isPie  = chartType === "pie";
     const isLine = chartType === "line";
 
     const firstRow = data.data[0] || {};
+    const rowKeys  = Object.keys(firstRow);
+
+    // Auto-detect xKey if missing or not present in data
+    const xKey = (rawXKey && firstRow[rawXKey] !== undefined)
+      ? rawXKey
+      : rowKeys.find(k => typeof firstRow[k] === "string" || isNaN(Number(firstRow[k]))) || rowKeys[0];
+
+    const numericKeys = rowKeys.filter(k => k !== xKey && !isNaN(Number(firstRow[k])));
     const derivedSeries = series?.length > 0
-      ? series
-      : Object.keys(firstRow).filter(k => k !== xKey && typeof firstRow[k] === "number");
+      ? series.filter(s => rowKeys.includes(s))   // only keep series keys that exist in data
+      : numericKeys;
 
     if (!derivedSeries.length)
       return <span style={{ whiteSpace: "pre-wrap" }}>{data.answer || "No chart data available."}</span>;
