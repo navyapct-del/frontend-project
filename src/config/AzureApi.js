@@ -72,7 +72,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
           let errMsg = `Upload failed: ${xhr.status}`;
           try {
             const parsed = JSON.parse(xhr.responseText);
-            if (parsed.error) errMsg = parsed.error;
+            if (parsed.error) errMsg = parsed.detail ? `${parsed.error} ${parsed.detail}` : parsed.error;
           } catch {}
           reject(new Error(errMsg));
         }
@@ -91,7 +91,7 @@ export const uploadDocument = async (file, description = "", tags = "", onProgre
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.error || `Upload failed: ${res.status}`);
+    throw new Error(err.detail ? `${err.error} ${err.detail}` : (err.error || `Upload failed: ${res.status}`));
   }
   return res.json();
 };
