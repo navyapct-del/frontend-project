@@ -3,7 +3,7 @@ import ChatInfoSage from "../Data-Orch-Components/ChatInfoSage";
 import SymphonyChatbot from "./SymphonyChatbot";
 import ChatHistorySidebar from "../Data-Orch-Components/ChatComponents/ChatHistorySidebar";
 import { AccountContext } from "../config/Account";
-import { getChatSession } from "../config/AzureApi";
+import { getChatSession, listDocuments } from "../config/AzureApi";
 import Pool from "../UserPool";
 import { useChatStore } from "../stores/chatStore";
 
@@ -40,6 +40,12 @@ function InformationSage() {
   const [activeSessionId, setActiveSessionId]     = useState(() => crypto.randomUUID());
   const [initialMessages, setInitialMessages]     = useState(undefined);
   const [sidebarRefresh, setSidebarRefresh]       = useState(0);
+  const [filenameFilter, setFilenameFilter]       = useState("");
+  const [docList, setDocList]                     = useState([]);
+
+  useEffect(() => {
+    if (userId) listDocuments(userId).then(setDocList).catch(() => {});
+  }, [userId]);
 
   const handleNewChat = () => {
     clearMessages();
@@ -91,11 +97,26 @@ function InformationSage() {
 
         {/* Chatbot area */}
         <div style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+          {/* File filter bar */}
+          <div style={{ padding: "8px 16px", borderBottom: "1px solid #e5e7eb", background: "#f9fafb", display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+            <span style={{ fontSize: "12px", color: "#6b7280", whiteSpace: "nowrap" }}>Filter by file:</span>
+            <select
+              value={filenameFilter}
+              onChange={(e) => setFilenameFilter(e.target.value)}
+              style={{ flex: 1, fontSize: "13px", padding: "4px 8px", border: "1px solid #e5e7eb", borderRadius: "6px", background: "#fff", color: "#1f2937", maxWidth: "320px" }}
+            >
+              <option value="">All files</option>
+              {docList.map((d) => (
+                <option key={d.id} value={d.filename}>{d.filename}</option>
+              ))}
+            </select>
+          </div>
           <SymphonyChatbot
             sessionId={activeSessionId}
             userId={userId}
             initialMessages={initialMessages}
             onMessageSaved={handleMessageSaved}
+            filenameFilter={filenameFilter}
           />
         </div>
       </div>

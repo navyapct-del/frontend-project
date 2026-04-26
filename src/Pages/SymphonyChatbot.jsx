@@ -199,6 +199,7 @@ const SymphonyChatbot = ({
   userId: userIdProp,
   initialMessages,
   onMessageSaved,
+  filenameFilter = "",
 } = {}) => {
   const genId = () => `id-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -307,7 +308,7 @@ const SymphonyChatbot = ({
     const updatedHistory = [...chatHistory, { role: "user", content: resolvedQuery }];
 
     try {
-      const raw = await queryDocuments(resolvedQuery, "", updatedHistory);
+      const raw = await queryDocuments(resolvedQuery, filenameFilter, updatedHistory);
       console.log("[SymphonyChatbot] response type:", raw.type, raw);
 
       // Normalize: if backend returns type:"text" but answer is a JSON string, unwrap it
