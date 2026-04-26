@@ -106,9 +106,12 @@ function TextPreview({ url }) {
   const [error, setError]     = useState(null);
   useEffect(() => {
     fetch(url)
-      .then((r) => r.text())
+      .then((r) => {
+        if (!r.ok) throw new Error(r.status === 404 ? "File not found. It may have been deleted." : `Failed to load file (${r.status}).`);
+        return r.text();
+      })
       .then(setContent)
-      .catch(() => setError("Failed to load file content."));
+      .catch((e) => setError(e.message));
   }, [url]);
   if (error)   return <p style={{ padding: "16px", color: "#dc2626" }}>{error}</p>;
   if (!content) return <p style={{ padding: "16px", color: "#6b7280" }}>Loading…</p>;
