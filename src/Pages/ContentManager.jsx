@@ -68,7 +68,7 @@ export default function ContentManager(props) {
   const loadDocuments = useCallback(() => {
     setLoading(true);
     console.log("[ContentManager] refreshing document list...");
-    listDocuments(GUEST_USER)
+    listDocuments()
       .then((data) => {
         const normalized = Array.isArray(data)
           ? data.map((d) => ({
