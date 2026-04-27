@@ -209,18 +209,6 @@ All requests go through APIM → `dataocrhfunapp` (Azure Function App, Python).
 
 ---
 
-## Local Development
-
-```bash
-# Install dependencies
-npm install
-
-# Copy env file and fill in values
-cp .env.example .env
-
-# Start dev server
-npm run dev
-```
 
 ### Environment Variables
 
