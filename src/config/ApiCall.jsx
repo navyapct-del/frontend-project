@@ -31,7 +31,7 @@ export const getUploadData = async (inputFields, userEmail, currentFolder) => {
       field.description || "",
       field.manualtags || "",
       null,
-      { userinfo: userEmail, current_folder: currentFolder }
+      { userinfo: userEmail, current_folder: currentFolder, uploaded_by: userEmail }
     )
   );
   await Promise.all(requests);

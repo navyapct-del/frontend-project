@@ -85,7 +85,7 @@ function DocumentUpload(props) {
       try {
         const response = await uploadDocument(file, description, tags, (pct) => {
           setUploadProgress(pct);
-        });
+        }, { uploaded_by: userEmail });
         console.log("[DocumentUpload] Upload success:", response);
         results.push(response);
       } catch (err) {
