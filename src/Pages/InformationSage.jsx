@@ -4,6 +4,7 @@ import SymphonyChatbot from "./SymphonyChatbot";
 import ChatHistorySidebar from "../Data-Orch-Components/ChatComponents/ChatHistorySidebar";
 import { getChatSession } from "../config/AzureApi";
 import { useChatStore } from "../stores/chatStore";
+import { userEmail } from "../utils/userEmail";
 
 const ACTIVE_SESSION_KEY = "info_sage_active_session";
 
@@ -16,7 +17,6 @@ function tryParseJSON(str) {
 }
 
 function InformationSage() {
-  const userEmail = "guest@demo.com";
   const userId = userEmail;
   const { clearMessages } = useChatStore();
   const [showChatbot, setShowChatbot] = useState(false);

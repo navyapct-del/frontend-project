@@ -4,6 +4,7 @@ import state, { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import { LoadingIcon } from "@/base-components";
 import { getUploadData } from "../../../config/ApiCall"; // Update the path as needed
+import { userEmail } from "../../../utils/userEmail";
 import { videoextention } from "../FileExtensions";
 import {
   Lucide,
@@ -32,7 +33,6 @@ function VideoUpload(props) {
   const [addbtnexception, setAddBtnException] = useState(false);
   const [notsupportedfiles, setNotSupportedFiles] = useState([]);
 
-  const userEmail = "guest@demo.com";
 
   const hiddenFileInputRef = React.useRef(new Array());
 

@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import downloadFile from "../config/downloadfile";
 import { LoadingIcon } from "@/base-components";
+import { userEmail } from "../utils/userEmail";
 
 const Chatbox = () => {
   const [userInput, setUserInput] = useState("");
-  const userEmail = "guest@demo.com";
 
   const [chatData, setChatData] = useState([]);
   const [loading, setLoading] = useState(false); // Track loading state

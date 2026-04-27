@@ -5,6 +5,7 @@ import { LoadingIcon } from "@/base-components";
 import { uploadDocument } from "../../../config/AzureApi";
 import { documentextention } from "../FileExtensions";
 import { validateFileType } from "../../../utils/fileValidation";
+import { userEmail } from "../../../utils/userEmail";
 import { ProgressBar } from "../ProgressBar";
 import {
   Lucide,
@@ -33,7 +34,6 @@ function DocumentUpload(props) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccessState] = useState(false);
 
-  const userEmail = "guest@demo.com";
 
   const hiddenFileInputRef = React.useRef(new Array());
 

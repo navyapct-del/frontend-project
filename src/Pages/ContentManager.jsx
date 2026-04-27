@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 
-const GUEST_USER = "guest@demo.com";
+import { userEmail as GUEST_USER } from "../utils/userEmail";
 import ObjectCard from "../Data-Orch-Components/CardsComponent/ObjectCard";
 import { listDocuments, deleteDocument } from "../config/AzureApi";
 import ReactPaginate from "react-paginate";
