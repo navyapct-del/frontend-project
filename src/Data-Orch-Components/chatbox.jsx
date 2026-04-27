@@ -1,11 +1,10 @@
-import React, { useContext, useState } from "react";
-import { AccountContext } from "../components/Account";
+import React, { useState } from "react";
 import downloadFile from "../config/downloadfile";
 import { LoadingIcon } from "@/base-components";
 
 const Chatbox = () => {
   const [userInput, setUserInput] = useState("");
-  const { userdetails, userEmail } = useContext(AccountContext);
+  const userEmail = "guest@demo.com";
 
   const [chatData, setChatData] = useState([]);
   const [loading, setLoading] = useState(false); // Track loading state

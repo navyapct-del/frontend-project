@@ -5,13 +5,9 @@
 
 const AZURE_BASE_URL = import.meta.env.VITE_AZURE_API_URL || "http://localhost:7071/api";
 
-const authHeaders = () => {
-  const token = localStorage.getItem("kc_token");
-  return {
-    "Ocp-Apim-Subscription-Key": import.meta.env.VITE_APIM_SUBSCRIPTION_KEY || "",
-    ...(token ? { Authorization: `Bearer ${token}` } : {}),
-  };
-};
+const authHeaders = () => ({
+  "Ocp-Apim-Subscription-Key": import.meta.env.VITE_APIM_SUBSCRIPTION_KEY || "",
+});
 
 // ─────────────────────────────────────────────
 // Health

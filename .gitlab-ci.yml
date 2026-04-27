@@ -5,7 +5,11 @@ stages:
 build:
   stage: build
   image: node:18
+  variables:
+    VITE_AZURE_API_URL: $VITE_AZURE_API_URL
+    VITE_APIM_SUBSCRIPTION_KEY: $VITE_APIM_SUBSCRIPTION_KEY
   script:
+    - rm -rf dist node_modules/.vite
     - npm install
     - npm run build
   artifacts:
@@ -17,6 +21,6 @@ deploy:
   image: node:18
   script:
     - npm install -g @azure/static-web-apps-cli
-    - swa deploy ./dist --deployment-token $SWA_TOKEN --env production
+    - swa deploy ./dist --deployment-token $SWA_DEMO_TOKEN --env production
   only:
     - main

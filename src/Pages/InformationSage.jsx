@@ -1,11 +1,11 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import ChatInfoSage from "../Data-Orch-Components/ChatInfoSage";
 import SymphonyChatbot from "./SymphonyChatbot";
 import ChatHistorySidebar from "../Data-Orch-Components/ChatComponents/ChatHistorySidebar";
-import { AccountContext } from "../config/Account";
 import { getChatSession } from "../config/AzureApi";
-import Pool from "../UserPool";
 import { useChatStore } from "../stores/chatStore";
+
+const ACTIVE_SESSION_KEY = "info_sage_active_session";
 
 // Parse JSON from stored message content to restore rawData (charts/tables)
 function tryParseJSON(str) {
@@ -16,44 +16,46 @@ function tryParseJSON(str) {
 }
 
 function InformationSage() {
-  const { userEmail } = useContext(AccountContext);
+  const userEmail = "guest@demo.com";
+  const userId = userEmail;
   const { clearMessages } = useChatStore();
   const [showChatbot, setShowChatbot] = useState(false);
 
-  // ── User identity: use context email, but also read directly from Cognito
-  // in case context hasn't updated yet (async timing issue)
-  const [userId, setUserId] = useState(() => {
-    // Try to get email synchronously from the current Cognito session
-    const user = Pool.getCurrentUser();
-    if (user) {
-      const session = user.getSignInUserSession();
-      if (session) return session.getIdToken().payload.email || "";
+  // ── Session management ─────────────────────────────────────────────────────
+  // Persist activeSessionId in localStorage so the same conversation is resumed
+  // after a page refresh instead of creating a new one every time.
+  const [activeSessionId, setActiveSessionId] = useState(() => {
+    const stored = localStorage.getItem(ACTIVE_SESSION_KEY);
+    if (stored) {
+      console.log("[InformationSage] restored sessionId:", stored);
+      return stored;
     }
-    return "";
+    const newId = crypto.randomUUID();
+    localStorage.setItem(ACTIVE_SESSION_KEY, newId);
+    console.log("[InformationSage] new sessionId:", newId);
+    return newId;
   });
 
-  useEffect(() => {
-    if (userEmail) setUserId(userEmail);
-  }, [userEmail]);
-
-  // ── Session management ─────────────────────────────────────────────────────
-  const [activeSessionId, setActiveSessionId]     = useState(() => crypto.randomUUID());
-  const [initialMessages, setInitialMessages]     = useState(undefined);
-  const [sidebarRefresh, setSidebarRefresh]       = useState(0);
+  const [initialMessages, setInitialMessages] = useState(undefined);
+  const [sidebarRefresh, setSidebarRefresh]   = useState(0);
 
   const handleNewChat = () => {
     clearMessages();
-    setActiveSessionId(crypto.randomUUID());
+    const newId = crypto.randomUUID();
+    localStorage.setItem(ACTIVE_SESSION_KEY, newId);
+    console.log("[InformationSage] new chat, sessionId:", newId);
+    setActiveSessionId(newId);
     setInitialMessages(undefined);
   };
 
   const handleSelectChat = (session) => {
     clearMessages();
+    localStorage.setItem(ACTIVE_SESSION_KEY, session.sessionId);
+    console.log("[InformationSage] selected sessionId:", session.sessionId);
     setActiveSessionId(session.sessionId);
     getChatSession(userId, session.sessionId)
       .then((data) => {
         const msgs = (data.messages || []).map((m) => {
-          // For bot messages, try to restore rawData (charts/tables) from stored JSON content
           const rawData = m.role === "assistant" ? tryParseJSON(m.content) : null;
           const isRich = rawData && rawData.type && rawData.type !== "text";
           return {
@@ -70,7 +72,6 @@ function InformationSage() {
   };
 
   const handleMessageSaved = () => {
-    // Bump the refresh counter so the sidebar re-fetches the session list
     setSidebarRefresh((n) => n + 1);
   };
 

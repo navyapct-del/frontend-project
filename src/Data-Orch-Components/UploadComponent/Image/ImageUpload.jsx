@@ -1,8 +1,7 @@
 import { CloudUploadIcon, XCircleIcon } from "@heroicons/react/outline";
 import React, { useRef } from "react";
-import state, { useState, useEffect, useContext } from "react";
+import state, { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
-import { AccountContext } from "../../../config/Account";
 import { LoadingIcon } from "@/base-components";
 import { getUploadData } from "../../../config/ApiCall"; // Update the path as needed
 import { imgextention } from "../FileExtensions";
@@ -33,8 +32,7 @@ function ImageUpload(props) {
   const [addbtnexception, setAddBtnException] = useState(false);
   const [notsupportedfiles, setNotSupportedFiles] = useState([]);
 
-  const { userEmail } = useContext(AccountContext);
-  console.log("upload.jsx userEmail ", userEmail);
+  const userEmail = "guest@demo.com";
 
   const hiddenFileInputRef = React.useRef(new Array());
 

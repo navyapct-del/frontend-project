@@ -1,30 +1,18 @@
 import dom from "@left4code/tw-starter/dist/js/dom";
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { helper as $h } from "@/utils";
 import { topMenu as useTopMenuStore } from "@/stores/top-menu";
 import { useRecoilValue } from "recoil";
 import { linkTo, nestedMenu } from "@/layouts/side-menu";
-import {
-  Lucide,
-  Dropdown,
-  DropdownToggle,
-  DropdownMenu,
-  DropdownContent,
-  DropdownItem,
-  DropdownHeader,
-  DropdownDivider,
-} from "@/base-components";
-import classnames from "classnames";
+import { Lucide } from "@/base-components";
 import MobileMenu from "@/components/mobile-menu/Main";
-import { AccountContext } from "../../config/Account";
 import logoUrl from "@/assets/images/white-logo.png";
+
 function Main() {
-  const { getSession, logout } = useContext(AccountContext);
   const navigate = useNavigate();
   const location = useLocation();
   const [formattedMenu, setFormattedMenu] = useState([]);
-  const [sessionDetails, setSessionDetails] = useState();
   const topMenuStore = useRecoilValue(useTopMenuStore);
   const topMenu = () => nestedMenu($h.toRaw(topMenuStore.menu), location);
 
@@ -32,19 +20,6 @@ function Main() {
     dom("body").removeClass("error-page").removeClass("login").addClass("main");
     setFormattedMenu(topMenu());
   }, [topMenuStore, location.pathname]);
-
-  useEffect(() => { getSessionDetails(); }, []);
-
-  const getSessionDetails = async () => {
-    const data = getSession();
-    setSessionDetails(data);
-  };
-
-  const getInitials = () => {
-    if (!sessionDetails) return "U";
-    const name = sessionDetails["name"] || sessionDetails["preferred_username"] || sessionDetails["email"] || "";
-    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
-  };
 
   return (
     <div style={{ minHeight: "100vh", background: "#f4f6f9", fontFamily: "'Segoe UI', system-ui, sans-serif" }}>
@@ -59,11 +34,7 @@ function Main() {
       }}>
         {/* Logo */}
         <Link to="/top-menu/documentscontent" style={{ display: "flex", alignItems: "center", gap: "12px", textDecoration: "none", flexShrink: 0, marginRight: "8px", padding: "10px 0" }}>
-          <img
-              src={logoUrl}
-              alt="CloudThat"
-              style={{ height: "28px", width: "auto", objectFit: "contain", display: "block" }}
-          />
+          <img src={logoUrl} alt="CloudThat" style={{ height: "28px", width: "auto", objectFit: "contain", display: "block" }} />
         </Link>
 
         {/* Nav */}
@@ -93,45 +64,23 @@ function Main() {
           })}
         </nav>
 
-        {/* User */}
-        <Dropdown>
-          <DropdownToggle tag="div" role="button" style={{
-            display: "flex", alignItems: "center", gap: "8px",
-            background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
-            borderRadius: "8px", padding: "6px 10px 6px 6px", cursor: "pointer",
-            margin: "6px 0",
+        {/* Guest Mode label */}
+        <div style={{
+          display: "flex", alignItems: "center", gap: "8px",
+          background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: "8px", padding: "6px 12px",
+          margin: "6px 0",
+        }}>
+          <div style={{
+            width: "32px", height: "32px", borderRadius: "6px",
+            background: "#7ec8e3", color: "#0d3347",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: "12px", fontWeight: "700",
           }}>
-            <div style={{
-              width: "32px", height: "32px", borderRadius: "6px",
-              background: "#7ec8e3", color: "#0d3347",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: "12px", fontWeight: "700", flexShrink: 0,
-            }}>
-              {getInitials()}
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", lineHeight: 1.3 }}>
-              <span style={{ fontSize: "12px", fontWeight: "600", color: "#fff" }}>
-                {sessionDetails?.["name"] || sessionDetails?.["preferred_username"] || "User"}
-              </span>
-              <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.45)", maxWidth: "120px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {sessionDetails?.["email"] || ""}
-              </span>
-            </div>
-            <Lucide icon="ChevronDown" className="w-3 h-3" style={{ color: "rgba(255,255,255,0.5)" }} />
-
-            <DropdownMenu className="w-52">
-              <DropdownContent>
-                <DropdownHeader tag="div" className="!font-normal">
-                  <div style={{ fontSize: "13px", color: "#374151" }}>{sessionDetails?.["email"]}</div>
-                </DropdownHeader>
-                <DropdownDivider />
-                <DropdownItem style={{ cursor: "pointer" }} onClick={logout}>
-                  <Lucide icon="LogOut" className="w-4 h-4 mr-2" /> Logout
-                </DropdownItem>
-              </DropdownContent>
-            </DropdownMenu>
-          </DropdownToggle>
-        </Dropdown>
+            G
+          </div>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: "#fff" }}>Guest Mode</span>
+        </div>
       </header>
 
       <main style={{ padding: "16px", maxWidth: "1400px", margin: "0 auto" }}>

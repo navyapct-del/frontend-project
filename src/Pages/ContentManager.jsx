@@ -1,5 +1,6 @@
-import React, { useContext, useEffect, useState, useCallback } from "react";
-import { AccountContext } from "../config/Account";
+import React, { useEffect, useState, useCallback } from "react";
+
+const GUEST_USER = "guest@demo.com";
 import ObjectCard from "../Data-Orch-Components/CardsComponent/ObjectCard";
 import { listDocuments, deleteDocument } from "../config/AzureApi";
 import ReactPaginate from "react-paginate";
@@ -49,7 +50,6 @@ export default function ContentManager(props) {
   const [allData, setAllData]             = useState([]);
   const [filteredData, setFilteredData]   = useState([]);
   const [selectedTags, setSelectedTags]   = useState([]);
-  const { userdetails, userEmail }        = useContext(AccountContext);
   const indexOfLastObject                 = (currentPage + 1) * objectsPerPage;
   const indexOfFirstObject                = indexOfLastObject - objectsPerPage;
   const [loading, setLoading]             = useState(false);

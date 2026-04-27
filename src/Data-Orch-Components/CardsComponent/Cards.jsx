@@ -107,10 +107,8 @@ function TextPreview({ docId }) {
   const [content, setContent] = useState(null);
   const [error, setError]     = useState(null);
   useEffect(() => {
-    const token = localStorage.getItem("kc_token");
     const headers = {
       "Ocp-Apim-Subscription-Key": import.meta.env.VITE_APIM_SUBSCRIPTION_KEY || "",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
     fetch(`${AZURE_BASE_URL}/file?id=${encodeURIComponent(docId)}`, { headers })
       .then((r) => {

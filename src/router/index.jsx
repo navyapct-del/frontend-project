@@ -1,27 +1,20 @@
-import { useRoutes } from "react-router-dom";
+import { useRoutes, Navigate } from "react-router-dom";
 import TopMenu from "../layouts/top-menu/Main";
-import Login from "../Pages/Login";
-import Register from "../Pages/Register";
-import ForgetPassword from "../Pages/ForgotPassword";
 import ContentManager from "../Pages/ContentManager";
-import ProtectedRoute from "./ProtectedRoute";
 import InformationSage from "../Pages/InformationSage";
 import SingleFileSathi from "../Pages/SingleFileSathi";
 import SharedChat from "../Pages/SharedChat";
 
 function Router() {
   const routes = [
-    { path: "/", element: <Login /> },
-    { path: "/register", element: <Register /> },
-    { path: "/forgetpassword", element: <ForgetPassword /> },
+    { path: "/", element: <Navigate to="/top-menu/documentscontent" replace /> },
+    { path: "/login", element: <Navigate to="/top-menu/documentscontent" replace /> },
+    { path: "/register", element: <Navigate to="/top-menu/documentscontent" replace /> },
+    { path: "/forgetpassword", element: <Navigate to="/top-menu/documentscontent" replace /> },
     { path: "/chat/:sessionId", element: <SharedChat /> },
     {
       path: "/top-menu",
-      element: (
-        <ProtectedRoute>
-          <TopMenu />
-        </ProtectedRoute>
-      ),
+      element: <TopMenu />,
       children: [
         { path: "filemanager",      element: <ContentManager type="file" /> },
         { path: "imagescontent",    element: <ContentManager type="image" /> },

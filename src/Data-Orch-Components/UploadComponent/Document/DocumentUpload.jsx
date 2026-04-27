@@ -1,7 +1,6 @@
 import { CloudUploadIcon, XCircleIcon } from "@heroicons/react/outline";
 import React, { useRef } from "react";
-import state, { useState, useEffect, useContext } from "react";
-import { AccountContext } from "../../../config/Account";
+import state, { useState, useEffect } from "react";
 import { LoadingIcon } from "@/base-components";
 import { uploadDocument } from "../../../config/AzureApi";
 import { documentextention } from "../FileExtensions";
@@ -34,8 +33,7 @@ function DocumentUpload(props) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadSuccess, setUploadSuccessState] = useState(false);
 
-  const { userEmail } = useContext(AccountContext);
-  console.log("upload.jsx userEmail ", userEmail);
+  const userEmail = "guest@demo.com";
 
   const hiddenFileInputRef = React.useRef(new Array());
 
