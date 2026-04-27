@@ -68,7 +68,7 @@ export default function ContentManager(props) {
   const loadDocuments = useCallback(() => {
     setLoading(true);
     console.log("[ContentManager] refreshing document list...");
-    listDocuments(userEmail)
+    listDocuments(GUEST_USER)
       .then((data) => {
         const normalized = Array.isArray(data)
           ? data.map((d) => ({
@@ -89,7 +89,7 @@ export default function ContentManager(props) {
       })
       .catch((e) => { console.error("[ContentManager] listDocuments error:", e); setContentFlag(true); })
       .finally(() => setLoading(false));
-  }, [userEmail]);
+  }, [GUEST_USER]);
 
   const handleUploadComplete = useCallback(() => {
     setShowUpload(false);
@@ -97,18 +97,18 @@ export default function ContentManager(props) {
   }, [loadDocuments]);
 
   useEffect(() => {
-    if (userdetails && props.type) {
-      const location = props.type !== "file" ? `${userEmail}/${props.type}/` : `${userEmail}/`;
+    if (props.type) {
+      const location = props.type !== "file" ? `${GUEST_USER}/${props.type}/` : `${GUEST_USER}/`;
       setCurrentLoc(location);
       setCardEnabled(false);
     }
-  }, [props.type, userdetails]);
+  }, [props.type]);
 
   useEffect(() => {
     console.log("[ContentManager] mount | type=", props.type);
-    if (!props.type || !userEmail) return;
+    if (!props.type) return;
     loadDocuments();
-  }, [props.type, userEmail, loadDocuments]);
+  }, [props.type, loadDocuments]);
 
   useEffect(() => {
     let base = allData;
