@@ -5,10 +5,9 @@ stages:
 build:
   stage: build
   image: node:18
-  variables:
-    VITE_AZURE_API_URL: $VITE_AZURE_API_URL
-    VITE_APIM_SUBSCRIPTION_KEY: $VITE_APIM_SUBSCRIPTION_KEY
   script:
+    - echo "VITE_AZURE_API_URL=$VITE_AZURE_API_URL" > .env
+    - echo "VITE_APIM_SUBSCRIPTION_KEY=$VITE_APIM_SUBSCRIPTION_KEY" >> .env
     - rm -rf dist node_modules/.vite
     - npm install
     - npm run build
