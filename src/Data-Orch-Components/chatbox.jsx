@@ -1,9 +1,10 @@
 import React, { useState } from "react";
 import downloadFile from "../config/downloadfile";
 import { LoadingIcon } from "@/base-components";
-import { userEmail } from "../utils/userEmail";
+import { useUserEmail } from "../utils/useUserEmail";
 
 const Chatbox = () => {
+  const userEmail = useUserEmail();
   const [userInput, setUserInput] = useState("");
 
   const [chatData, setChatData] = useState([]);

@@ -8,7 +8,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { uploadDocument, queryDocuments, deleteDocument, cleanupSession } from "../config/AzureApi";
 import { validateFileType } from "../utils/fileValidation";
-import { userEmail } from "../utils/userEmail";
+import { useUserEmail } from "../utils/useUserEmail";
 import { BotMessage } from "../Data-Orch-Components/ChatComponents/BotMessage";
 import { ProgressBar } from "../Data-Orch-Components/UploadComponent/ProgressBar";
 
@@ -49,9 +49,10 @@ function normalizeResponse(data) {
 }
 
 export default function SingleFileSathi() {
+  const userEmail = useUserEmail();
   const sfsKey = getSfsKey(userEmail);
 
-  const [saved] = useState(() => loadState(getSfsKey(userEmail)));
+  const [saved] = useState(() => loadState(getSfsKey(localStorage.getItem("userEmail") || "guest")));
 
   const [messages, setMessagesRaw] = useState(() => saved.messages || [WELCOME_MSG]);
   const [fileReady, setFileReadyRaw]   = useState(() => !!saved.fileReady);
