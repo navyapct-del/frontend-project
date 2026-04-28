@@ -1,9 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Modal, ModalBody, Lucide } from "@/base-components";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import "videojs-contrib-quality-levels";
-import "videojs-http-source-selector";
 
 const VideoModal = ({ showModal, onClose, videoSrc, fileDetails }) => {
   const videoRef = useRef(null);

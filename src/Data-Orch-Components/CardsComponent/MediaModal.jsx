@@ -1,8 +1,4 @@
 import React from "react";
-import videojs from "video.js";
-import "video.js/dist/video-js.css";
-import "videojs-contrib-quality-levels";
-import "videojs-http-source-selector";
 
 const MediaModal = ({
   showModal,
