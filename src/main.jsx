@@ -3,6 +3,10 @@ import { Auth0Provider } from "@auth0/auth0-react";
 import App from "./App";
 import "./assets/css/app.css";
 
+const onRedirectCallback = () => {
+  window.history.replaceState({}, document.title, "/");
+};
+
 const container = document.getElementById("root");
 const root = createRoot(container);
 
@@ -13,6 +17,7 @@ root.render(
     authorizationParams={{ redirect_uri: window.location.origin }}
     cacheLocation="localstorage"
     useRefreshTokens={true}
+    onRedirectCallback={onRedirectCallback}
   >
     <App />
   </Auth0Provider>
