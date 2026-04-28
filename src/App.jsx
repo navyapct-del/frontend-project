@@ -5,14 +5,12 @@ import Router from "./router";
 
 function App() {
   return (
-    <>
-      <RecoilRoot>
-        <BrowserRouter>
-          <Router />
-          <ScrollToTop />
-        </BrowserRouter>
-      </RecoilRoot>
-    </>
+    <RecoilRoot>
+      <BrowserRouter>
+        <Router />
+        <ScrollToTop />
+      </BrowserRouter>
+    </RecoilRoot>
   );
 }
 
