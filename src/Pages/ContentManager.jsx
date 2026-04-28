@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 
-import { userEmail as GUEST_USER } from "../utils/userEmail";
+import { useUserEmail } from "../utils/useUserEmail";
 import ObjectCard from "../Data-Orch-Components/CardsComponent/ObjectCard";
 import { listDocuments, deleteDocument } from "../config/AzureApi";
 import ReactPaginate from "react-paginate";
@@ -44,6 +44,7 @@ const TYPE_COLORS = {
 };
 
 export default function ContentManager(props) {
+  const GUEST_USER = useUserEmail();
   const [currentPage, setCurrentPage]     = useState(0);
   const [objectsPerPage]                  = useState(10);
   const [cardEnabled, setCardEnabled]     = useState(false);
