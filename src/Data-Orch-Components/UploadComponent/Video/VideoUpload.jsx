@@ -4,7 +4,7 @@ import state, { useState, useEffect } from "react";
 import { v4 as uuid } from "uuid";
 import { LoadingIcon } from "@/base-components";
 import { getUploadData } from "../../../config/ApiCall"; // Update the path as needed
-import { userEmail } from "../../../utils/userEmail";
+import { useUserEmail } from "../../../utils/useUserEmail";
 import { videoextention } from "../FileExtensions";
 import {
   Lucide,
@@ -17,6 +17,7 @@ import {
 import { set } from "lodash";
 
 function VideoUpload(props) {
+  const userEmail = useUserEmail();
   const [successModalPreview, setSuccessModalPreview] = useState(false);
   const [staticBackdropModalPreview, setStaticBackdropModalPreview] =
     useState(false);

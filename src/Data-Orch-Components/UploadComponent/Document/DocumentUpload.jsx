@@ -5,7 +5,7 @@ import { LoadingIcon } from "@/base-components";
 import { uploadDocument } from "../../../config/AzureApi";
 import { documentextention } from "../FileExtensions";
 import { validateFileType } from "../../../utils/fileValidation";
-import { userEmail } from "../../../utils/userEmail";
+import { useUserEmail } from "../../../utils/useUserEmail";
 import { ProgressBar } from "../ProgressBar";
 import {
   Lucide,
@@ -17,6 +17,7 @@ import {
 } from "@/base-components";
 
 function DocumentUpload(props) {
+  const userEmail = useUserEmail();
   const [successModalPreview, setSuccessModalPreview] = useState(false);
   const [staticBackdropModalPreview, setStaticBackdropModalPreview] = useState(false);
   const [images, setImages] = useState([]);
