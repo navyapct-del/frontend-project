@@ -218,8 +218,7 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     padding: "8px 0",
-    //borderRight: "1px solid rgba(255,255,255,0.08)",
-    borderRight: "1px solid rgba(224, 46, 46, 0.81)",
+    borderRight: "1px solid rgba(255,255,255,0.08)",
     height: "100%",
   },
   header: {
