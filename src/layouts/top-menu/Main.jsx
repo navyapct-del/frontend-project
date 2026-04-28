@@ -8,7 +8,6 @@ import { linkTo, nestedMenu } from "@/layouts/side-menu";
 import { Lucide } from "@/base-components";
 import MobileMenu from "@/components/mobile-menu/Main";
 import logoUrl from "@/assets/images/white-logo.png";
-import { useAuth0 } from "@auth0/auth0-react";
 
 function Main() {
   const navigate = useNavigate();
@@ -16,10 +15,6 @@ function Main() {
   const [formattedMenu, setFormattedMenu] = useState([]);
   const topMenuStore = useRecoilValue(useTopMenuStore);
   const topMenu = () => nestedMenu($h.toRaw(topMenuStore.menu), location);
-  const { user, isAuthenticated } = useAuth0();
-  const displayName = isAuthenticated ? (user?.name || user?.email || "User") : "Guest Mode";
-  const displayInitial = isAuthenticated ? (user?.name?.[0] || user?.email?.[0] || "U").toUpperCase() : "G";
-  const displayEmail = isAuthenticated ? user?.email : null;
 
   useEffect(() => {
     dom("body").removeClass("error-page").removeClass("login").addClass("main");
@@ -78,16 +73,13 @@ function Main() {
         }}>
           <div style={{
             width: "32px", height: "32px", borderRadius: "6px",
-            background: isAuthenticated ? "#4ade80" : "#7ec8e3", color: "#0d3347",
+            background: "#7ec8e3", color: "#0d3347",
             display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "12px", fontWeight: "700",
           }}>
-            {displayInitial}
+            G
           </div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: "12px", fontWeight: "600", color: "#fff" }}>{displayName}</span>
-            {displayEmail && <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.7)" }}>{displayEmail}</span>}
-          </div>
+          <span style={{ fontSize: "12px", fontWeight: "600", color: "#fff" }}>Guest Mode</span>
         </div>
       </header>
 
