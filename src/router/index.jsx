@@ -8,6 +8,7 @@ import SharedChat from "../Pages/SharedChat";
 function Router() {
   const routes = [
     { path: "/", element: <Navigate to="/top-menu/documentscontent" replace /> },
+    { path: "/callback", element: <Navigate to="/top-menu/documentscontent" replace /> },
     { path: "/login", element: <Navigate to="/top-menu/documentscontent" replace /> },
     { path: "/register", element: <Navigate to="/top-menu/documentscontent" replace /> },
     { path: "/forgetpassword", element: <Navigate to="/top-menu/documentscontent" replace /> },
