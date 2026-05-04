@@ -176,11 +176,17 @@ const ChatInfoSage = () => {
                   {(msg.images || []).length === 0 ? (
                     <p className="text-sm text-gray-500">No images found.</p>
                   ) : (
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       {msg.images.map((img, j) => (
-                        <a key={j} href={img.url} target="_blank" rel="noopener noreferrer">
+                        <a key={j} href={img.url} target="_blank" rel="noopener noreferrer"
+                          className="block">
                           <img src={img.thumbnail} alt={img.title || img.name}
                             className="w-full max-h-48 object-cover rounded hover:opacity-80" />
+                          {img.title && (
+                            <p className="text-xs text-gray-600 mt-1 truncate" title={img.title}>
+                              {img.title}
+                            </p>
+                          )}
                         </a>
                       ))}
                     </div>
